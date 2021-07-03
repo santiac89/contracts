@@ -30,7 +30,6 @@ task('accounts', 'Prints the list of accounts', async (args, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 export default {
-  defaultNetwork: 'testnet',
   networks: {
     localhost: {
       url: 'http://127.0.0.1:8545',

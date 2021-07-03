@@ -6,6 +6,7 @@
   "author": "Kevin <kevin@juicy.bet>",
   "license": "MIT",
   "scripts": {
+    "test": "hardhat test",
     "testnet-deploy-greeter": "hardhat run --network testnet scripts/Greeter.deploy.ts",
     "testnet-deploy-coolcoin": "hardhat run --network testnet scripts/CoolCoin.deploy.ts",
     "testnet-verify-greeter": "hardhat verify --contract contracts/Greeter.sol:Greeter --constructor-args scripts/Greeter.args.ts --network testnet",
