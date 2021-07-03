@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./core/BEP20Token.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract CoolCoin is BEP20Token {
-  constructor() BEP20Token("CoolCoin", "COOL", 18, 1e27) {}
+contract CoolCoin is ERC20 {
+  constructor(uint256 initialSupply) ERC20("CoolCoin", "COOL") {
+    _mint(msg.sender, initialSupply);
+  }
 }

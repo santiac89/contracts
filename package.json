@@ -9,12 +9,13 @@
     "testnet-deploy-greeter": "hardhat run --network testnet scripts/Greeter.deploy.ts",
     "testnet-deploy-coolcoin": "hardhat run --network testnet scripts/CoolCoin.deploy.ts",
     "testnet-verify-greeter": "hardhat verify --contract contracts/Greeter.sol:Greeter --constructor-args scripts/Greeter.args.ts --network testnet",
-    "testnet-verify-coolcoin": "hardhat verify --contract contracts/CoolCoin.sol:CoolCoin  --network testnet"
+    "testnet-verify-coolcoin": "hardhat verify --contract contracts/CoolCoin.sol:CoolCoin --constructor-args scripts/CoolCoin.args.ts  --network testnet"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^4.2.0",
     "@types/chai": "^4.2.19",
     "@types/mocha": "^8.2.2",
     "@types/node": "^16.0.0",
