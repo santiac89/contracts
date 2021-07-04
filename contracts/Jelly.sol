@@ -42,7 +42,7 @@ contract Jelly is WhirlpoolConsumer {
 
   event Transfer(address to, uint256 amount);
 
-  constructor(IWhirlpool _whirlpool) WhirlpoolConsumer(_whirlpool) {}
+  constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) {}
 
   function createBet(JellyType fruit, address referrer)
     external

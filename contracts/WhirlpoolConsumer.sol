@@ -9,9 +9,8 @@ abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
   IWhirlpool whirlpool;
   mapping(bytes32 => uint256) internal activeRequests;
 
-  constructor(IWhirlpool _whirlpool) {
-    whirlpool = _whirlpool;
-    whirlpool.addConsumer(address(this));
+  constructor(address _whirlpool) {
+    whirlpool = IWhirlpool(_whirlpool);
   }
 
   function _requestRandomness(uint256 id) internal {

@@ -7,8 +7,8 @@ import "./interfaces/IWhirlpoolConsumer.sol";
 import "./interfaces/IWhirlpool.sol";
 
 contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
-  mapping(IWhirlpoolConsumer => bool) private validConsumers;
-  mapping(bytes32 => IWhirlpoolConsumer) private activeRequests;
+  mapping(address => bool) private validConsumers;
+  mapping(bytes32 => address) private activeRequests;
 
   bytes32 internal keyHash;
   uint256 internal fee;
@@ -28,12 +28,12 @@ contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
 
   function request() external override validConsumer hasEnoughLINK returns (bytes32 requestId) {
     requestId = requestRandomness(keyHash, fee);
-    activeRequests[requestId] = IWhirlpoolConsumer(msg.sender);
+    activeRequests[requestId] = msg.sender;
     emit RequestedRandomness(requestId, msg.sender);
   }
 
   function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
-    activeRequests[requestId].consumeRandomness(requestId, randomness);
+    IWhirlpoolConsumer(activeRequests[requestId]).consumeRandomness(requestId, randomness);
     delete activeRequests[requestId];
     emit FulfilledRandomness(requestId, randomness);
   }
@@ -47,11 +47,11 @@ contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
   }
 
   function addConsumer(address consumerAddress) external override onlyOwner {
-    validConsumers[IWhirlpoolConsumer(consumerAddress)] = true;
+    validConsumers[consumerAddress] = true;
   }
 
   function deleteConsumer(address consumerAddress) external override onlyOwner {
-    delete validConsumers[IWhirlpoolConsumer(consumerAddress)];
+    delete validConsumers[consumerAddress];
   }
 
   function withdrawLink() external override onlyOwner {
@@ -59,12 +59,12 @@ contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
   }
 
   modifier hasEnoughLINK {
-    require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK");
+    require(LINK.balanceOf(address(this)) >= fee, "Whirlpool: Not enough LINK");
     _;
   }
 
   modifier validConsumer {
-    require(validConsumers[IWhirlpoolConsumer(msg.sender)], "Whirlpool: Not a valid consumer");
+    require(validConsumers[msg.sender], "Whirlpool: Not a valid consumer");
     _;
   }
 }
