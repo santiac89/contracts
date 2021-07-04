@@ -4,13 +4,15 @@
   "tabWidth": 2,
   "printWidth": 120,
   "singleQuote": true,
+  "useTabs": false,
+  "bracketSpacing": true,
+  "endOfLine": "lf",
+  "trailingComma": "none",
   "overrides": [
     {
       "files": "*.sol",
       "options": {
-        "useTabs": false,
         "singleQuote": false,
-        "bracketSpacing": false,
         "explicitTypes": "always"
       }
     }

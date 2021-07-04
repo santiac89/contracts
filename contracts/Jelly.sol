@@ -11,7 +11,6 @@ contract Jelly is Ownable {
 
   struct JellyBetResult {
     address joiner;
-    uint256 time;
     JellyType fruit;
   }
 
@@ -20,7 +19,7 @@ contract Jelly is Ownable {
     address creator;
     address referrer;
     uint256 value;
-    uint256 time;
+    bool cancelled;
     JellyType fruit;
     JellyBetResult result;
   }
@@ -35,9 +34,9 @@ contract Jelly is Ownable {
   uint256 public _referralRate = 100;
   uint256 public _cancelFee = 100;
 
-  uint256 public _minBet = 0;
+  uint256 public _minBet = 0.01 ether;
 
-  event BetCreated(uint256 id, address indexed creator, JellyType fruit, uint256 value, uint256 time);
+  event BetCreated(uint256 id, address indexed creator, JellyType fruit, uint256 value);
   event BetCancelled(uint256 id, address indexed creator, JellyType fruit, uint256 value);
   event BetAccepted(
     uint256 id,
@@ -46,8 +45,7 @@ contract Jelly is Ownable {
     address indexed referrer,
     JellyType fruit,
     JellyType result,
-    uint256 value,
-    uint256 time
+    uint256 value
   );
 
   function createBet(JellyType fruit, address referrer)
@@ -67,48 +65,48 @@ contract Jelly is Ownable {
         referrer: referrer,
         value: msg.value,
         fruit: fruit,
-        time: block.timestamp,
-        result: JellyBetResult({joiner: address(0), time: 0, fruit: JellyType.Strawberry})
+        cancelled: false,
+        result: JellyBetResult({ joiner: address(0), fruit: JellyType.Strawberry })
       })
     );
 
-    emit BetCreated(id, msg.sender, fruit, msg.value, block.timestamp);
+    emit BetCreated(id, msg.sender, fruit, msg.value);
   }
 
-  function cancelBet(uint256 id) public payable betOwner(id) isAvailable(id) {
-    JellyBet memory bet = bets[id];
-    uint256 fee = (bet.value * _cancelFee) / 10000;
-    require(send(msg.sender, bet.value, fee, address(0)), "Cancel bet failed");
+  function cancelBet(uint256 id) public payable isAvailable(id) betOwner(id) {
+    uint256 fee = (bets[id].value * _cancelFee) / 10000;
+    require(send(msg.sender, bets[id].value, fee, address(0)), "Cancel bet failed");
 
-    emit BetCancelled(id, msg.sender, bet.fruit, bet.value);
+    bets[id].cancelled = true;
+
+    emit BetCancelled(id, msg.sender, bets[id].fruit, bets[id].value);
   }
 
   function acceptBet(uint256 id, address referrer)
     public
     payable
     walletsOnly
-    isFair(id)
     isAvailable(id)
+    isFair(id)
     noSelfReferral(referrer)
   {
-    JellyBet storage bet = bets[id];
-    uint256 fee = (bet.value * _commissionRate) / 10000;
-    uint256 reward = bet.value + msg.value;
+    uint256 fee = (bets[id].value * _commissionRate) / 10000;
+    uint256 reward = bets[id].value + msg.value;
     JellyType result = pickJelly();
 
     address winner;
-    if (result == bet.fruit) {
-      referrer = bet.referrer;
-      winner = bet.creator;
+    if (result == bets[id].fruit) {
+      referrer = bets[id].referrer;
+      winner = bets[id].creator;
     } else {
       winner = msg.sender;
     }
 
     require(send(winner, reward, fee, referrer), "Reward failed");
 
-    bet.result = JellyBetResult({joiner: msg.sender, time: block.timestamp, fruit: result});
+    bets[id].result = JellyBetResult({ joiner: msg.sender, fruit: result });
 
-    emit BetAccepted(id, bet.creator, msg.sender, referrer, bet.fruit, result, msg.value, block.timestamp);
+    emit BetAccepted(id, bets[id].creator, msg.sender, referrer, bets[id].fruit, result, msg.value);
   }
 
   function commission() public view onlyOwner returns (uint256) {
@@ -119,7 +117,7 @@ contract Jelly is Ownable {
     _commissionRate = val;
   }
 
-  function setRefRate(uint256 val) public onlyOwner limitMax(val, _commissionRate) {
+  function setReferralRate(uint256 val) public onlyOwner limitMax(val, _commissionRate) {
     _referralRate = val;
   }
 
@@ -142,12 +140,12 @@ contract Jelly is Ownable {
   }
 
   modifier nonZero() {
-    require(msg.value > 0, "Cant bet for zero");
+    require(msg.value > 0, "Bet amount cannot be 0");
     _;
   }
 
   modifier minBet() {
-    require(msg.value > _minBet, "Bet amount is lower than minimum bet amount");
+    require(msg.value >= _minBet, "Bet amount is lower than minimum bet amount");
     _;
   }
 
@@ -157,7 +155,7 @@ contract Jelly is Ownable {
   }
 
   modifier isAvailable(uint256 id) {
-    require(bets[id].value > 0, "Bet is unavailable");
+    require(id >= 0 && id < bets.length && !bets[id].cancelled, "Bet is unavailable");
     _;
   }
 
@@ -203,7 +201,7 @@ contract Jelly is Ownable {
   }
 
   function transfer(address to, uint256 amount) private returns (bool) {
-    (bool success, ) = to.call{value: amount}("");
+    (bool success, ) = to.call{ value: amount }("");
     return success;
   }
 }
