@@ -1,0 +1,10 @@
+{
+  "configurations": [
+    {
+      "command": "yarn test",
+      "name": "Run Tests",
+      "request": "launch",
+      "type": "node-terminal"
+    }
+  ]
+}
