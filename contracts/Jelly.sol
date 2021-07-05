@@ -10,10 +10,7 @@ contract Jelly is WhirlpoolConsumer {
   }
 
   struct JellyBet {
-    bool cancelled;
-    bool concluded;
     JellyType fruit;
-    JellyType result;
     address creator;
     address joiner;
     uint256 value;
@@ -29,79 +26,62 @@ contract Jelly is WhirlpoolConsumer {
   uint16 public referralRate = 100;
   uint16 public cancelFee = 100;
 
-  uint64 numBets = 0;
+  uint64 public numBets = 0;
 
   uint256 public minBet = 0.01 ether;
 
   event BetCreated(uint64 indexed id, address indexed creator, JellyType fruit, uint256 value);
-  event BetCancelled(uint64 indexed id);
-  event BetAccepted(uint64 indexed id, address indexed joiner);
-  event BetConcluded(uint64 indexed id, JellyType result);
+  event BetCancelled(uint64 indexed id, address indexed creator, JellyType fruit, uint256 value);
+  event BetAccepted(uint64 indexed id, address indexed creator, JellyType fruit, uint256 value, address indexed joiner);
+  event BetConcluded(
+    uint64 indexed id,
+    address indexed creator,
+    JellyType fruit,
+    uint256 value,
+    address indexed joiner,
+    address referrer,
+    JellyType result
+  );
 
   event Transfer(address to, uint256 amount);
 
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) {}
 
   function createBet(JellyType fruit, address referrer) external payable isMinBet {
-    bets[numBets] = JellyBet({
-      creator: msg.sender,
-      value: msg.value,
-      fruit: fruit,
-      cancelled: false,
-      concluded: false,
-      joiner: address(0),
-      result: JellyType.Strawberry
-    });
+    bets[numBets] = JellyBet({ creator: msg.sender, value: msg.value, fruit: fruit, joiner: address(0) });
 
     setReferrer(referrer);
     emit BetCreated(numBets, msg.sender, fruit, msg.value);
     numBets += 1;
   }
 
-  function cancelBet(uint64 id)
-    external
-    isAvailable(id)
-    isntCancelled(id)
-    isntAccepted(id)
-    isntConcluded(id)
-    betOwner(id)
-  {
+  function cancelBet(uint64 id) external isAvailable(id) betOwner(id) {
     uint256 fee = (bets[id].value * cancelFee) / 10000;
     require(send(msg.sender, bets[id].value, fee, address(0)), "Jelly: Cancel bet failed");
 
-    bets[id].cancelled = true;
-
-    emit BetCancelled(id);
+    emit BetCancelled(id, bets[id].creator, bets[id].fruit, bets[id].value);
+    delete bets[id];
   }
 
-  function acceptBet(uint64 id, address referrer)
-    external
-    payable
-    isAvailable(id)
-    isntCancelled(id)
-    isntAccepted(id)
-    isntConcluded(id)
-    isFair(id)
-  {
+  function acceptBet(uint64 id, address referrer) external payable isAvailable(id) isFair(id) isntAccepted(id) {
     bets[id].joiner = msg.sender;
 
     setReferrer(referrer);
     _requestRandomness(id);
 
-    emit BetAccepted(id, msg.sender);
+    emit BetAccepted(id, bets[id].creator, bets[id].fruit, bets[id].value, bets[id].joiner);
   }
 
-  function concludeBet(uint64 id, JellyType result) internal isAccepted(id) isntConcluded(id) {
+  function concludeBet(uint64 id, JellyType result) internal isAvailable(id) isAccepted(id) {
     uint256 reward = bets[id].value * 2;
     uint256 fee = (reward * commissionRate) / 10000;
     address winner = result == bets[id].fruit ? bets[id].creator : bets[id].joiner;
 
     require(send(winner, reward, fee, referrers[winner]), "Jelly: Reward failed");
 
-    bets[id].concluded = true;
-    bets[id].result = result;
+    emit BetConcluded(id, bets[id].creator, bets[id].fruit, bets[id].value, bets[id].joiner, referrers[winner], result);
 
-    emit BetConcluded(id, result);
+    delete bets[id];
   }
 
   function setReferrer(address referrer) internal {
@@ -143,11 +123,6 @@ contract Jelly is WhirlpoolConsumer {
     _;
   }
 
-  modifier isntCancelled(uint64 id) {
-    require(!bets[id].cancelled, "Jelly: Bet is already cancelled");
-    _;
-  }
-
   modifier isntAccepted(uint64 id) {
     require(bets[id].joiner == address(0), "Jelly: Bet is already accepted");
     _;
@@ -155,11 +130,6 @@ contract Jelly is WhirlpoolConsumer {
 
   modifier isAccepted(uint64 id) {
     require(bets[id].joiner != address(0), "Jelly: Bet isn't already accepted");
-    _;
-  }
-
-  modifier isntConcluded(uint64 id) {
-    require(!bets[id].concluded, "Jelly: Bet is already concluded");
     _;
   }
 
@@ -179,23 +149,17 @@ contract Jelly is WhirlpoolConsumer {
     uint256 fee,
     address referrer
   ) internal returns (bool) {
-    bool sent = transfer(to, amount - fee);
+    (bool sent, ) = to.call{ value: amount - fee }("");
     if (fee == 0) return sent;
 
     if (referrer != address(0)) {
       uint256 refBonus = (amount * referralRate) / 10000;
-      bool sentToRef = transfer(referrer, refBonus);
+      (bool sentToRef, ) = referrer.call{ value: refBonus }("");
       if (sentToRef) fee -= refBonus;
       sent = sent && sentToRef;
     }
 
-    bool sentFee = transfer(owner(), fee);
+    (bool sentFee, ) = owner().call{ value: fee }("");
     return sent && sentFee;
-  }
-
-  function transfer(address to, uint256 amount) internal returns (bool) {
-    (bool success, ) = to.call{ value: amount }("");
-    emit Transfer(to, amount);
-    return success;
   }
 }

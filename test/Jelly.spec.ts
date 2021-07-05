@@ -36,8 +36,6 @@ describe('Jelly', () => {
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
         value: parseEther('0.01'),
-        cancelled: false,
-        concluded: false,
         fruit: 1
       })
     })
@@ -56,8 +54,6 @@ describe('Jelly', () => {
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
         value: parseEther('0.01'),
-        cancelled: false,
-        concluded: false,
         fruit: 1
       })
     })
@@ -90,12 +86,12 @@ describe('Jelly', () => {
       await jelly.createBet(1, creatorReferrer.address, { value: parseEther('0.01') })
     })
 
-    it('cancels an existing bet', async () => {
+    it('deletes an existing bet', async () => {
       await jelly.cancelBet(0)
 
       const bet = await jelly.bets(0)
 
-      expect(bet.cancelled).to.eq(true)
+      expect(bet.value).to.eq(0)
     })
 
     it('throws error if anyone else other than the creator tries to cancel the bet', async () => {
@@ -114,20 +110,10 @@ describe('Jelly', () => {
       await expect(jelly.cancelBet(1)).to.be.revertedWith('Jelly: Bet is unavailable')
     })
 
-    it('throws error if bet is already cancelled', async () => {
-      await jelly.cancelBet(0)
-
-      await expect(jelly.cancelBet(0)).to.be.revertedWith('Jelly: Bet is already cancelled')
-    })
-
-    it('throws error if bet is already accepted', async () => {
-      await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') })
-
-      await expect(jelly.cancelBet(0)).to.be.revertedWith('Jelly: Bet is already accepted')
-    })
-
     it('emits a BetCancelled event', async () => {
-      await expect(jelly.cancelBet(0)).to.emit(jelly, 'BetCancelled').withArgs(0)
+      await expect(jelly.cancelBet(0))
+        .to.emit(jelly, 'BetCancelled')
+        .withArgs(0, creator.address, 1, parseEther('0.01'))
     })
   })
 
@@ -149,8 +135,6 @@ describe('Jelly', () => {
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
         value: parseEther('0.01'),
-        cancelled: false,
-        concluded: false,
         fruit: 1,
         joiner: joiner.address
       })
@@ -164,22 +148,6 @@ describe('Jelly', () => {
 
     it('throws error if bet is unavailable', async () => {
       await expect(jelly.acceptBet(1, joinerReferrer.address)).to.be.revertedWith('Jelly: Bet is unavailable')
-    })
-
-    it('throws error if bet is already cancelled', async () => {
-      await jelly.cancelBet(0)
-
-      await expect(jelly.acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') })).to.be.revertedWith(
-        'Jelly: Bet is already cancelled'
-      )
-    })
-
-    it('throws error if bet is already accepted', async () => {
-      await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') })
-
-      await expect(
-        jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') })
-      ).to.be.revertedWith('Jelly: Bet is already accepted')
     })
 
     describe('on bet concluded', () => {
@@ -197,16 +165,15 @@ describe('Jelly', () => {
           tx = await txPromise
         })
 
-        it('concludes the bet', async () => {
+        it('deletes the bet', async () => {
           const bet = await jelly.bets(0)
-          expect({ ...bet }).to.deep.include({
-            concluded: true,
-            result: 0
-          })
+          expect(bet.value).to.eq(0)
         })
 
         it('emits a BetConcluded event', async () => {
-          await expect(txPromise).to.emit(jelly, 'BetConcluded').withArgs(0, 0)
+          await expect(txPromise)
+            .to.emit(jelly, 'BetConcluded')
+            .withArgs(0, creator.address, 1, parseEther('0.01'), joiner.address, joinerReferrer.address, 0)
         })
 
         it('sends reward to bet joiner', async () => {
@@ -223,28 +190,21 @@ describe('Jelly', () => {
           tx = await txPromise
         })
 
-        it('concludes the bet', async () => {
+        it('deletes the bet', async () => {
           const bet = await jelly.bets(0)
-          expect({ ...bet }).to.deep.include({
-            concluded: true,
-            result: 1
-          })
+          expect(bet.value).to.eq(0)
         })
 
         it('emits a BetConcluded event', async () => {
-          await expect(txPromise).to.emit(jelly, 'BetConcluded').withArgs(0, 1)
+          await expect(txPromise)
+            .to.emit(jelly, 'BetConcluded')
+            .withArgs(0, creator.address, 1, parseEther('0.01'), joiner.address, creatorReferrer.address, 1)
         })
 
         it('sends reward to bet creator', async () => {
           await expect(tx).to.changeEtherBalances(
             [owner, creator, creatorReferrer, joiner, joinerReferrer],
             [parseEther('0.0008'), parseEther('0.019'), parseEther('0.0002'), 0, 0]
-          )
-        })
-
-        it('throws error if bet is already concluded', async () => {
-          await expect(jelly.connect(owner).consumeRandomness(constants.HashZero, 79319)).to.be.revertedWith(
-            'Jelly: Bet is already concluded'
           )
         })
       })
