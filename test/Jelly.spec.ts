@@ -25,7 +25,10 @@ describe('Jelly', () => {
     await mockIWhirlpool.mock.request.returns(constants.HashZero)
 
     const jellyFactory = new ContractFactory(Jelly.abi, Jelly.bytecode, owner)
-    jelly = (await jellyFactory.deploy(mockIWhirlpool.address)).connect(creator)
+    jelly = await jellyFactory.deploy(mockIWhirlpool.address)
+    await jelly.enableWhirlpool()
+
+    jelly = jelly.connect(creator)
   })
 
   describe('createBet', () => {
@@ -36,7 +39,7 @@ describe('Jelly', () => {
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
         value: parseEther('0.01'),
-        fruit: 1
+        bet: 1
       })
     })
 
@@ -54,7 +57,7 @@ describe('Jelly', () => {
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
         value: parseEther('0.01'),
-        fruit: 1
+        bet: 1
       })
     })
 
@@ -106,10 +109,6 @@ describe('Jelly', () => {
       )
     })
 
-    it('throws error if bet is unavailable', async () => {
-      await expect(jelly.cancelBet(1)).to.be.revertedWith('Jelly: Bet is unavailable')
-    })
-
     it('emits a BetCancelled event', async () => {
       await expect(jelly.cancelBet(0))
         .to.emit(jelly, 'BetCancelled')
@@ -135,7 +134,7 @@ describe('Jelly', () => {
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
         value: parseEther('0.01'),
-        fruit: 1,
+        bet: 1,
         joiner: joiner.address
       })
     })
