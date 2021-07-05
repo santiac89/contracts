@@ -34,9 +34,7 @@ describe('Jelly', () => {
 
       const bet = await jelly.bets(0)
       expect({ ...bet }).to.deep.include({
-        id: BigNumber.from(0),
         creator: creator.address,
-        creatorReferrer: creatorReferrer.address,
         value: parseEther('0.01'),
         cancelled: false,
         concluded: false,
@@ -55,11 +53,13 @@ describe('Jelly', () => {
 
       const bet = await jelly.bets(0)
 
-      expect(bet.creatorReferrer).to.eq(constants.AddressZero)
-    })
-
-    it('throws an error if no ether is passed', async () => {
-      await expect(jelly.createBet(1, creatorReferrer.address)).to.be.revertedWith('Jelly: Bet amount cannot be 0')
+      expect({ ...bet }).to.deep.include({
+        creator: creator.address,
+        value: parseEther('0.01'),
+        cancelled: false,
+        concluded: false,
+        fruit: 1
+      })
     })
 
     it('throws an error if ether passed are less than minimum bet', async () => {
@@ -76,14 +76,6 @@ describe('Jelly', () => {
           value: parseEther('0.01')
         })
       ).to.be.revertedWith('function was called with incorrect parameters')
-    })
-
-    it('throws an error if creator and referrer are the same', async () => {
-      await expect(
-        jelly.createBet(1, creator.address, {
-          value: parseEther('0.01')
-        })
-      ).to.be.revertedWith('Jelly: Cannot refer self')
     })
 
     it('emits a BetCreated event', async () => {
@@ -116,19 +108,6 @@ describe('Jelly', () => {
         [creator, owner],
         [parseEther('0.0099'), parseEther('0.0001')]
       )
-    })
-
-    it('adds the cancellation fee to commission', async () => {
-      expect(await jelly.connect(owner).commission()).to.eq(0)
-
-      await jelly.createBet(0, creatorReferrer.address, { value: parseEther('0.01') })
-      await jelly.cancelBet(0)
-
-      expect(await jelly.connect(owner).commission()).to.eq(parseEther('0.0001'))
-
-      await jelly.cancelBet(1)
-
-      expect(await jelly.connect(owner).commission()).to.eq(parseEther('0.0002'))
     })
 
     it('throws error if bet is unavailable', async () => {
@@ -168,15 +147,12 @@ describe('Jelly', () => {
 
       const bet = await jelly.bets(0)
       expect({ ...bet }).to.deep.include({
-        id: BigNumber.from(0),
         creator: creator.address,
-        creatorReferrer: creatorReferrer.address,
         value: parseEther('0.01'),
         cancelled: false,
         concluded: false,
         fruit: 1,
-        joiner: joiner.address,
-        joinerReferrer: joinerReferrer.address
+        joiner: joiner.address
       })
     })
 
