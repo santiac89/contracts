@@ -10,16 +10,16 @@ contract Jelly is WhirlpoolConsumer {
   }
 
   struct JellyBet {
-    uint256 id;
-    address creator;
-    address creatorReferrer;
-    uint256 value;
+    uint64 id;
     bool cancelled;
     bool concluded;
     JellyType fruit;
+    JellyType result;
+    address creator;
+    address creatorReferrer;
     address joiner;
     address joinerReferrer;
-    JellyType result;
+    uint256 value;
   }
 
   JellyBet[] public bets;
@@ -35,10 +35,10 @@ contract Jelly is WhirlpoolConsumer {
 
   uint256 public minBet = 0.01 ether;
 
-  event BetCreated(uint256 indexed id, address indexed creator, JellyType fruit, uint256 value);
-  event BetCancelled(uint256 indexed id);
-  event BetAccepted(uint256 indexed id, address indexed joiner);
-  event BetConcluded(uint256 indexed id, JellyType result);
+  event BetCreated(uint64 indexed id, address indexed creator, JellyType fruit, uint256 value);
+  event BetCancelled(uint64 indexed id);
+  event BetAccepted(uint64 indexed id, address indexed joiner);
+  event BetConcluded(uint64 indexed id, JellyType result);
 
   event Transfer(address to, uint256 amount);
 
@@ -52,7 +52,7 @@ contract Jelly is WhirlpoolConsumer {
     isMinBet
     noSelfReferral(referrer)
   {
-    uint256 id = bets.length;
+    uint64 id = uint64(bets.length);
 
     bets.push(
       JellyBet({
@@ -72,9 +72,8 @@ contract Jelly is WhirlpoolConsumer {
     emit BetCreated(id, msg.sender, fruit, msg.value);
   }
 
-  function cancelBet(uint256 id)
+  function cancelBet(uint64 id)
     external
-    payable
     isAvailable(id)
     isntCancelled(id)
     isntAccepted(id)
@@ -89,7 +88,7 @@ contract Jelly is WhirlpoolConsumer {
     emit BetCancelled(id);
   }
 
-  function acceptBet(uint256 id, address referrer)
+  function acceptBet(uint64 id, address referrer)
     external
     payable
     onlyWallets
@@ -108,7 +107,7 @@ contract Jelly is WhirlpoolConsumer {
     emit BetAccepted(id, msg.sender);
   }
 
-  function concludeBet(uint256 id, JellyType result)
+  function concludeBet(uint64 id, JellyType result)
     internal
     isAvailable(id)
     isntCancelled(id)
@@ -136,8 +135,8 @@ contract Jelly is WhirlpoolConsumer {
     emit BetConcluded(id, result);
   }
 
-  function _consumeRandomness(bytes32 requestId, uint256 randomness) internal override {
-    concludeBet(activeRequests[requestId], JellyType(randomness % 2));
+  function _consumeRandomness(uint64 id, uint256 randomness) internal override {
+    concludeBet(id, JellyType(randomness % 2));
   }
 
   function commission() external view onlyOwner returns (uint256) {

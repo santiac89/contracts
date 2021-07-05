@@ -7,23 +7,23 @@ import "./interfaces/IWhirlpool.sol";
 
 abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
   IWhirlpool whirlpool;
-  mapping(bytes32 => uint256) internal activeRequests;
+  mapping(bytes32 => uint64) internal activeRequests;
 
   constructor(address _whirlpool) {
     whirlpool = IWhirlpool(_whirlpool);
   }
 
-  function _requestRandomness(uint256 id) internal {
+  function _requestRandomness(uint64 id) internal {
     bytes32 requestId = whirlpool.request();
     activeRequests[requestId] = id;
   }
 
   function consumeRandomness(bytes32 requestId, uint256 _randomness) external override onlyWhirlpoolOrOwner {
-    _consumeRandomness(requestId, _randomness);
+    _consumeRandomness(activeRequests[requestId], _randomness);
     delete activeRequests[requestId];
   }
 
-  function _consumeRandomness(bytes32 requestId, uint256 randomness) internal virtual;
+  function _consumeRandomness(uint64 id, uint256 randomness) internal virtual;
 
   modifier onlyWhirlpoolOrOwner() {
     require(
