@@ -19,31 +19,20 @@ contract Jelly is WhirlpoolConsumer {
   mapping(address => address) public referrers;
   mapping(uint64 => JellyBet) public bets;
 
-  uint16 public MAX_COMMISSION_RATE = 1000;
-  uint16 public MAX_REFERRAL_RATE = 200;
+  uint16 public constant MAX_COMMISSION_RATE = 1000;
 
   uint16 public commissionRate = 500;
   uint16 public referralRate = 100;
-  uint16 public cancelFee = 100;
+  uint16 public cancellationFee = 100;
 
   uint64 public numBets = 0;
 
   uint256 public minBet = 0.01 ether;
 
-  event BetCreated(uint64 indexed id, address indexed creator, JellyType bet, uint256 value);
-  event BetCancelled(uint64 indexed id, address indexed creator, JellyType bet, uint256 value);
-  event BetAccepted(uint64 indexed id, address indexed creator, JellyType bet, uint256 value, address indexed joiner);
-  event BetConcluded(
-    uint64 indexed id,
-    address indexed creator,
-    JellyType bet,
-    uint256 value,
-    address indexed joiner,
-    address referrer,
-    JellyType result
-  );
-
-  event Transfer(address to, uint256 amount);
+  event BetCreated(uint64 id, address creator, JellyType bet, uint256 value);
+  event BetCancelled(uint64 id);
+  event BetAccepted(uint64 id, address joiner);
+  event BetConcluded(uint64 id, address referrer, JellyType result);
 
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) {}
 
@@ -66,10 +55,10 @@ contract Jelly is WhirlpoolConsumer {
   function cancelBet(uint64 id) external {
     require(bets[id].creator == msg.sender, "Jelly: You didn't create this bet");
 
-    uint256 fee = (bets[id].value * cancelFee) / 10000;
+    uint256 fee = (bets[id].value * cancellationFee) / 10000;
     require(send(msg.sender, bets[id].value, fee, address(0)), "Jelly: Cancel bet failed");
 
-    emit BetCancelled(id, bets[id].creator, bets[id].bet, bets[id].value);
+    emit BetCancelled(id);
     delete bets[id];
   }
 
@@ -81,7 +70,7 @@ contract Jelly is WhirlpoolConsumer {
     bets[id].joiner = msg.sender;
     referrers[msg.sender] = referrer;
 
-    emit BetAccepted(id, bets[id].creator, bets[id].bet, bets[id].value, bets[id].joiner);
+    emit BetAccepted(id, bets[id].joiner);
 
     _requestRandomness(id);
   }
@@ -96,7 +85,7 @@ contract Jelly is WhirlpoolConsumer {
 
     require(send(winner, reward, fee, referrers[winner]), "Jelly: Reward failed");
 
-    emit BetConcluded(id, bets[id].creator, bets[id].bet, bets[id].value, bets[id].joiner, referrers[winner], result);
+    emit BetConcluded(id, referrers[winner], result);
 
     delete bets[id];
   }
@@ -115,17 +104,13 @@ contract Jelly is WhirlpoolConsumer {
     referralRate = val;
   }
 
-  function setCancelRate(uint16 val) external onlyOwner {
-    require(val <= MAX_REFERRAL_RATE, "Jelly: Value exceeds max amount");
-    cancelFee = val;
+  function setCancellationFee(uint16 val) external onlyOwner {
+    require(val <= commissionRate, "Jelly: Value exceeds max amount");
+    cancellationFee = val;
   }
 
   function setMinBet(uint256 val) external onlyOwner {
     minBet = val;
-  }
-
-  modifier limitMax(uint16 val, uint16 max) {
-    _;
   }
 
   function send(

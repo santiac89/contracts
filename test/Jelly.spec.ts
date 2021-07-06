@@ -110,9 +110,7 @@ describe('Jelly', () => {
     })
 
     it('emits a BetCancelled event', async () => {
-      await expect(jelly.cancelBet(0))
-        .to.emit(jelly, 'BetCancelled')
-        .withArgs(0, creator.address, 1, parseEther('0.01'))
+      await expect(jelly.cancelBet(0)).to.emit(jelly, 'BetCancelled').withArgs(0)
     })
   })
 
@@ -125,6 +123,12 @@ describe('Jelly', () => {
       await expect(
         await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') })
       ).to.changeEtherBalances([joiner, jelly], [parseEther('-0.01'), parseEther('0.01')])
+    })
+
+    it('emits BetAccepted event', async () => {
+      await expect(jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') }))
+        .to.emit(jelly, 'BetAccepted')
+        .withArgs(0, joiner.address)
     })
 
     it('sets joiner on the bet', async () => {
@@ -170,9 +174,7 @@ describe('Jelly', () => {
         })
 
         it('emits a BetConcluded event', async () => {
-          await expect(txPromise)
-            .to.emit(jelly, 'BetConcluded')
-            .withArgs(0, creator.address, 1, parseEther('0.01'), joiner.address, joinerReferrer.address, 0)
+          await expect(txPromise).to.emit(jelly, 'BetConcluded').withArgs(0, joinerReferrer.address, 0)
         })
 
         it('sends reward to bet joiner', async () => {
@@ -195,9 +197,7 @@ describe('Jelly', () => {
         })
 
         it('emits a BetConcluded event', async () => {
-          await expect(txPromise)
-            .to.emit(jelly, 'BetConcluded')
-            .withArgs(0, creator.address, 1, parseEther('0.01'), joiner.address, creatorReferrer.address, 1)
+          await expect(txPromise).to.emit(jelly, 'BetConcluded').withArgs(0, creatorReferrer.address, 1)
         })
 
         it('sends reward to bet creator', async () => {

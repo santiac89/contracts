@@ -46,12 +46,12 @@ contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
     fee = _fee;
   }
 
-  function addConsumer(address consumerAddress) external override onlyOwner {
-    validConsumers[consumerAddress] = true;
+  function addConsumer(address consumer) external override onlyOwnerOrSameOwner(consumer) {
+    validConsumers[consumer] = true;
   }
 
-  function deleteConsumer(address consumerAddress) external override onlyOwner {
-    delete validConsumers[consumerAddress];
+  function deleteConsumer(address consumer) external override onlyOwner {
+    delete validConsumers[consumer];
   }
 
   function withdrawLink() external override onlyOwner {
@@ -65,6 +65,11 @@ contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
 
   modifier validConsumer {
     require(validConsumers[msg.sender], "Whirlpool: Not a valid consumer");
+    _;
+  }
+
+  modifier onlyOwnerOrSameOwner(address consumer) {
+    require(msg.sender == owner() || Ownable(consumer).owner() == owner(), "Whirlpool: Only owner can add consumer");
     _;
   }
 }

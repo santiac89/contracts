@@ -35,11 +35,12 @@ abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
   }
 
   function enableWhirlpool() external onlyOwner {
+    whirlpool.addConsumer(address(this));
     whirlpoolEnabled = true;
   }
 
   function disableWhirlpool() external onlyOwner {
-    whirlpoolEnabled = true;
+    whirlpoolEnabled = false;
   }
 
   function _consumeRandomness(uint64 id, uint256 randomness) internal virtual;
