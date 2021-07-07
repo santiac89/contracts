@@ -7,14 +7,12 @@
   "license": "MIT",
   "scripts": {
     "test": "hardhat test",
-    "testnet-deploy-greeter": "hardhat run --network testnet scripts/Greeter.deploy.ts",
-    "testnet-verify-greeter": "hardhat verify --contract contracts/Greeter.sol:Greeter --constructor-args scripts/Greeter.args.ts --network testnet",
-    "testnet-deploy-coolcoin": "hardhat run --network testnet scripts/CoolCoin.deploy.ts",
-    "testnet-verify-coolcoin": "hardhat verify --contract contracts/CoolCoin.sol:CoolCoin --constructor-args scripts/CoolCoin.args.ts  --network testnet",
     "testnet-deploy-whirlpool": "hardhat run --network testnet scripts/Whirlpool.deploy.testnet.ts",
     "testnet-verify-whirlpool": "hardhat verify --constructor-args scripts/Whirlpool.args.testnet.ts --network testnet",
     "testnet-deploy-jelly": "hardhat run --network testnet scripts/Jelly.deploy.testnet.ts",
-    "testnet-verify-jelly": "hardhat verify --constructor-args scripts/Jelly.args.testnet.ts --network testnet"
+    "testnet-verify-jelly": "hardhat verify --constructor-args scripts/Jelly.args.testnet.ts --network testnet",
+    "testnet-deploy-donut": "hardhat run --network testnet scripts/Donut.deploy.ts",
+    "testnet-verify-donut": "hardhat verify --network testnet"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
