@@ -26,7 +26,12 @@ contract Donut is Ownable {
 
   function hasWon(uint64 id) public view returns (bool) {
     if (bets[id].value == 0) return false;
-    return uint8(blockhash(bets[id].block)[31]) % 16 == bets[id].bet;
+
+    bytes32 hash = blockhash(bets[id].block);
+
+    if (hash == bytes32(0)) return false;
+
+    return uint8(hash[31]) % 16 == bets[id].bet;
   }
 
   function placeBet(uint8 bet) external payable {
