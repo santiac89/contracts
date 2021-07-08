@@ -2,8 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./security/SafeEntry.sol";
 
-contract Donut is Ownable {
+contract Donut is Ownable, SafeEntry {
+  using Address for address;
+
   uint8 public constant MAX_MULTIPLIER = 16;
   uint8 public multiplier = 15;
 
@@ -34,7 +37,7 @@ contract Donut is Ownable {
     return uint8(hash[31]) % 16 == bets[id].bet;
   }
 
-  function placeBet(uint8 bet) external payable {
+  function placeBet(uint8 bet) external payable nonReentrant notContract {
     require(msg.value >= minBet, "Donut: Bet amount is less than minimum");
     require(msg.value <= maxBet, "Donut: Bet amount is greater than maximum");
 
@@ -50,10 +53,11 @@ contract Donut is Ownable {
     numBets += 1;
   }
 
-  function claim(uint64 id) external {
+  function claim(uint64 id) external nonReentrant notContract {
     require(bets[id].creator == msg.sender, "Donut: You didn't create this bet");
     require(hasWon(id), "Donut: You didn't win");
-    require(send(bets[id].creator, bets[id].value * 15), "Donut: Claim failed");
+
+    Address.sendValue(payable(bets[id].creator), bets[id].value * 15);
 
     emit BetClaimed(id);
 

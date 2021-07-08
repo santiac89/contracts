@@ -2,8 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "./WhirlpoolConsumer.sol";
+import "./security/SafeEntry.sol";
 
-contract Jelly is WhirlpoolConsumer {
+contract Jelly is WhirlpoolConsumer, SafeEntry {
+  using Address for address;
+
   enum JellyType {
     Strawberry,
     Watermelon
@@ -36,7 +39,7 @@ contract Jelly is WhirlpoolConsumer {
 
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) {}
 
-  function createBet(JellyType bet, address referrer) external payable {
+  function createBet(JellyType bet, address referrer) external payable nonReentrant notContract {
     require(msg.value >= minBet, "Jelly: Bet amount is lower than minimum bet amount");
 
     uint64 id = numBets;
@@ -52,17 +55,17 @@ contract Jelly is WhirlpoolConsumer {
     numBets += 1;
   }
 
-  function cancelBet(uint64 id) external {
+  function cancelBet(uint64 id) external nonReentrant notContract {
     require(bets[id].creator == msg.sender, "Jelly: You didn't create this bet");
 
     uint256 fee = (bets[id].value * cancellationFee) / 10000;
-    require(send(msg.sender, bets[id].value, fee, address(0)), "Jelly: Cancel bet failed");
+    send(msg.sender, bets[id].value, fee, address(0));
 
     emit BetCancelled(id);
     delete bets[id];
   }
 
-  function acceptBet(uint64 id, address referrer) external payable {
+  function acceptBet(uint64 id, address referrer) external payable nonReentrant notContract {
     require(bets[id].value != 0, "Jelly: Bet is unavailable");
     require(bets[id].joiner == address(0), "Jelly: Bet is already accepted");
     require(msg.value == bets[id].value, "Jelly: Unfair bet");
@@ -83,7 +86,7 @@ contract Jelly is WhirlpoolConsumer {
     uint256 fee = (reward * commissionRate) / 10000;
     address winner = result == bets[id].bet ? bets[id].creator : bets[id].joiner;
 
-    require(send(winner, reward, fee, referrers[winner]), "Jelly: Reward failed");
+    send(winner, reward, fee, referrers[winner]);
 
     emit BetConcluded(id, referrers[winner], result);
 
@@ -118,18 +121,17 @@ contract Jelly is WhirlpoolConsumer {
     uint256 amount,
     uint256 fee,
     address referrer
-  ) internal returns (bool) {
-    (bool sent, ) = to.call{ value: amount - fee }("");
-    if (fee == 0) return sent;
+  ) internal {
+    Address.sendValue(payable(to), amount - fee);
+    if (fee == 0) return;
 
     if (referrer != address(0)) {
       uint256 refBonus = (amount * referralRate) / 10000;
-      (bool sentToRef, ) = referrer.call{ value: refBonus }("");
-      if (sentToRef) fee -= refBonus;
-      sent = sent && sentToRef;
+
+      Address.sendValue(payable(referrer), refBonus);
+      fee -= refBonus;
     }
 
-    (bool sentFee, ) = owner().call{ value: fee }("");
-    return sent && sentFee;
+    Address.sendValue(payable(owner()), fee);
   }
 }
