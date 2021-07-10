@@ -7,8 +7,16 @@ import "./security/SafeEntry.sol";
 contract Donut is Ownable, SafeEntry {
   using Address for address;
 
-  uint8 public constant MAX_MULTIPLIER = 16;
+  uint8 public constant MIN_MULTIPLIER = 10;
+  uint8 public constant MAX_MULTIPLIER = 20;
   uint8 public multiplier = 15;
+
+  uint16 public constant MAX_COMMISSION_RATE = 1000;
+  uint256 public MAX_EXPIRY = 4 days;
+  uint256 public MIN_EXPIRY = 5 minutes;
+
+  uint16 public commissionRate = 500;
+  uint16 public referralRate = 100;
 
   uint256 public minBet = 0.001 ether;
   uint256 public maxBet = 0.1 ether;
@@ -21,25 +29,26 @@ contract Donut is Ownable, SafeEntry {
   }
 
   mapping(uint64 => DonutBet) public bets;
+  mapping(address => address) public referrers;
 
   uint64 public numBets = 0;
 
-  event BetPlaced(uint64 id, uint8 bet, address creator, uint256 value, uint256 block);
-  event BetClaimed(uint64 id);
+  event BetPlaced(uint64 id, uint8 bet, address creator, uint256 value);
+  event BetClaimed(uint64 id, address referrer);
 
   function hasWon(uint64 id) public view returns (bool) {
     if (bets[id].value == 0) return false;
 
-    bytes32 hash = blockhash(bets[id].block);
+    bytes32 hash = getBlockHash(bets[id].block);
 
     if (hash == bytes32(0)) return false;
 
     return uint8(hash[31]) % 16 == bets[id].bet;
   }
 
-  function placeBet(uint8 bet) external payable nonReentrant notContract {
+  function placeBet(uint8 bet, address referrer) external payable nonReentrant notContract {
     require(msg.value >= minBet, "Donut: Bet amount is less than minimum");
-    require(msg.value <= maxBet, "Donut: Bet amount is greater than maximum");
+    require(msg.value <= maxBet, "Donut: Bet amount is more than maximum");
 
     uint64 id = numBets;
 
@@ -48,7 +57,9 @@ contract Donut is Ownable, SafeEntry {
     bets[id].value = msg.value;
     bets[id].block = block.number;
 
-    emit BetPlaced(id, bet, msg.sender, msg.value, block.number);
+    referrers[msg.sender] = referrer;
+
+    emit BetPlaced(id, bet, msg.sender, msg.value);
 
     numBets += 1;
   }
@@ -57,11 +68,21 @@ contract Donut is Ownable, SafeEntry {
     require(bets[id].creator == msg.sender, "Donut: You didn't create this bet");
     require(hasWon(id), "Donut: You didn't win");
 
-    Address.sendValue(payable(bets[id].creator), bets[id].value * 15);
+    send(payable(msg.sender), bets[id].value * multiplier);
 
-    emit BetClaimed(id);
+    emit BetClaimed(id, referrers[msg.sender]);
 
     delete bets[id];
+  }
+
+  function setFees(uint16 _commissionRate, uint16 _referralRate) external onlyOwner {
+    require(
+      _commissionRate <= MAX_COMMISSION_RATE && _referralRate <= _commissionRate,
+      "Salad: Value exceeds max amount"
+    );
+
+    commissionRate = _commissionRate;
+    referralRate = _referralRate;
   }
 
   function setMinBet(uint256 val) external onlyOwner {
@@ -74,6 +95,7 @@ contract Donut is Ownable, SafeEntry {
 
   function setMultiplier(uint8 val) external onlyOwner {
     require(val <= MAX_MULTIPLIER, "Donut: Value exceeds max amount");
+    require(val >= MIN_MULTIPLIER, "Donut: Value is below min amount");
 
     multiplier = val;
   }
@@ -81,11 +103,27 @@ contract Donut is Ownable, SafeEntry {
   function deposit() external payable {}
 
   function withdraw(uint256 amount) external onlyOwner {
-    send(owner(), amount);
+    Address.sendValue(payable(owner()), amount);
   }
 
-  function send(address to, uint256 amount) internal returns (bool) {
-    (bool sent, ) = to.call{ value: amount }("");
-    return sent;
+  function getBlockHash(uint256 blockNumber) internal view virtual returns (bytes32) {
+    return blockhash(blockNumber);
+  }
+
+  function send(address to, uint256 amount) internal {
+    address referrer = referrers[to];
+    uint256 fee = (amount * commissionRate) / 10000;
+
+    Address.sendValue(payable(to), amount - fee);
+    if (fee == 0) return;
+
+    if (referrer != address(0)) {
+      uint256 refBonus = (amount * referralRate) / 10000;
+
+      Address.sendValue(payable(referrer), refBonus);
+      fee -= refBonus;
+    }
+
+    Address.sendValue(payable(owner()), fee);
   }
 }
