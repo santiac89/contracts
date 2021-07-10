@@ -1,3 +1,4 @@
+import { constants } from 'ethers/lib/ethers'
 import { ethers } from 'hardhat'
 import './NumberExtensions'
 
@@ -13,4 +14,8 @@ export async function snapshot(callback: (t: number) => Promise<any>) {
   await ethers.provider.send('evm_setNextBlockTimestamp', [t])
   await ethers.provider.send('evm_mine', [])
   await callback(t)
+}
+
+export function hashEndingWith(s: string) {
+  return constants.HashZero.replace(/0$/, s)
 }

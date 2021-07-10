@@ -42,8 +42,6 @@ contract Salad is WhirlpoolConsumer, SafeEntry {
   uint16 public commissionRate = 500;
   uint16 public referralRate = 100;
 
-  uint256 public numBets = 0;
-
   uint256 public minBet = 0.01 ether;
   uint256 public expiry = 1 days;
 
@@ -150,14 +148,14 @@ contract Salad is WhirlpoolConsumer, SafeEntry {
     return s[0] + s[1] + s[2] + s[3] + s[4] + s[5];
   }
 
-  function setCommissionRate(uint16 val) external onlyOwner {
-    require(val <= MAX_COMMISSION_RATE, "Salad: Value exceeds max amount");
-    commissionRate = val;
-  }
+  function setFees(uint16 _commissionRate, uint16 _referralRate) external onlyOwner {
+    require(
+      _commissionRate <= MAX_COMMISSION_RATE && _referralRate <= _commissionRate,
+      "Salad: Value exceeds max amount"
+    );
 
-  function setReferralRate(uint16 val) external onlyOwner {
-    require(val <= commissionRate, "Salad: Value exceeds max amount");
-    referralRate = val;
+    commissionRate = _commissionRate;
+    referralRate = _referralRate;
   }
 
   function setMinBet(uint256 val) external onlyOwner {

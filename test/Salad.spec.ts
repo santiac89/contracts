@@ -95,7 +95,7 @@ describe('Salad', () => {
     await mockIWhirlpool.mock.addConsumer.returns()
     await mockIWhirlpool.mock.request.returns(constants.HashZero)
 
-    const saladFactory = new ContractFactory(Salad.abi, Salad.bytecode, owner)
+    const saladFactory = await ethers.getContractFactory('Salad')
     salad = await saladFactory.deploy(mockIWhirlpool.address)
     await salad.enableWhirlpool()
 

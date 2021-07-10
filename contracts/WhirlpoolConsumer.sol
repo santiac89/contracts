@@ -7,7 +7,7 @@ import "./interfaces/IWhirlpool.sol";
 
 abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
   IWhirlpool whirlpool;
-  mapping(bytes32 => uint64) internal activeRequests;
+  mapping(bytes32 => uint256) internal activeRequests;
 
   bool public whirlpoolEnabled = false;
 
@@ -15,7 +15,7 @@ abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
     whirlpool = IWhirlpool(_whirlpool);
   }
 
-  function _requestRandomness(uint64 id) internal {
+  function _requestRandomness(uint256 id) internal {
     if (whirlpoolEnabled) {
       bytes32 requestId = whirlpool.request();
       activeRequests[requestId] = id;
@@ -43,7 +43,7 @@ abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
     whirlpoolEnabled = false;
   }
 
-  function _consumeRandomness(uint64 id, uint256 randomness) internal virtual;
+  function _consumeRandomness(uint256 id, uint256 randomness) internal virtual;
 
   modifier onlyWhirlpoolOrOwner() {
     require(
