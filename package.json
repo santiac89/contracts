@@ -11,6 +11,8 @@
     "testnet-verify-whirlpool": "hardhat verify --constructor-args scripts/Whirlpool.args.testnet.ts --network testnet",
     "testnet-deploy-jelly": "hardhat run --network testnet scripts/Jelly.deploy.testnet.ts",
     "testnet-verify-jelly": "hardhat verify --constructor-args scripts/Jelly.args.testnet.ts --network testnet",
+    "testnet-deploy-salad": "hardhat run --network testnet scripts/Salad.deploy.testnet.ts",
+    "testnet-verify-salad": "hardhat verify --constructor-args scripts/Salad.args.testnet.ts --network testnet",
     "testnet-deploy-donut": "hardhat run --network testnet scripts/Donut.deploy.ts",
     "testnet-verify-donut": "hardhat verify --network testnet"
   },

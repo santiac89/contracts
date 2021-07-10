@@ -1,12 +1,11 @@
 import { ethers, waffle } from 'hardhat'
 import { expect } from 'chai'
-import { Contract } from '@ethersproject/contracts'
-import { parseEther } from 'ethers/lib/utils'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumber, constants, ContractFactory, ContractTransaction, Wallet } from 'ethers'
 import Jelly from '../artifacts/contracts/Jelly.sol/Jelly.json'
 import IWhirlpool from '../artifacts/contracts/interfaces/IWhirlpool.sol/IWhirlpool.json'
+import './utils/NumberExtensions'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { MockContract } from 'ethereum-waffle'
+import { constants, Contract, ContractFactory, ContractTransaction } from 'ethers'
 
 describe('Jelly', () => {
   let jelly: Contract
@@ -33,38 +32,39 @@ describe('Jelly', () => {
 
   describe('createBet', () => {
     it('creates a new bet', async () => {
-      await jelly.createBet(1, creatorReferrer.address, { value: parseEther('0.01') })
+      await jelly.createBet(1, creatorReferrer.address, { value: (0.01).eth })
 
       const bet = await jelly.bets(0)
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
-        value: parseEther('0.01'),
+        value: (0.01).eth,
         bet: 1
       })
     })
 
     it("deducts bet amount from creator's wallet", async () => {
-      await expect(
-        await jelly.createBet(1, creatorReferrer.address, { value: parseEther('0.01') })
-      ).to.changeEtherBalances([creator, jelly], [parseEther('-0.01'), parseEther('0.01')])
+      await expect(await jelly.createBet(1, creatorReferrer.address, { value: (0.01).eth })).to.changeEtherBalances(
+        [creator, jelly],
+        [(-0.01).eth, (0.01).eth]
+      )
     })
 
     it('creates a new bet even if referrer is address(0)', async () => {
-      await jelly.createBet(1, constants.AddressZero, { value: parseEther('0.01') })
+      await jelly.createBet(1, constants.AddressZero, { value: (0.01).eth })
 
       const bet = await jelly.bets(0)
 
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
-        value: parseEther('0.01'),
+        value: (0.01).eth,
         bet: 1
       })
     })
 
-    it('throws an error if ether passed are less than minimum bet', async () => {
+    it('throws an error if.eth passed are less than minimum bet', async () => {
       await expect(
         jelly.createBet(1, creatorReferrer.address, {
-          value: parseEther('0.001')
+          value: (0.001).eth
         })
       ).to.be.revertedWith('Jelly: Bet amount is lower than minimum bet amount')
     })
@@ -72,21 +72,21 @@ describe('Jelly', () => {
     it('throws an error if bet is on anything other than 0 or 1', async () => {
       await expect(
         jelly.createBet(2, creatorReferrer.address, {
-          value: parseEther('0.01')
+          value: (0.01).eth
         })
       ).to.be.revertedWith('function was called with incorrect parameters')
     })
 
     it('emits a BetCreated event', async () => {
-      await expect(jelly.createBet(0, constants.AddressZero, { value: parseEther('0.01') }))
+      await expect(jelly.createBet(0, constants.AddressZero, { value: (0.01).eth }))
         .to.emit(jelly, 'BetCreated')
-        .withArgs(0, creator.address, 0, parseEther('0.01'))
+        .withArgs(0, creator.address, 0, (0.01).eth)
     })
   })
 
   describe('cancelBet', () => {
     beforeEach(async () => {
-      await jelly.createBet(1, creatorReferrer.address, { value: parseEther('0.01') })
+      await jelly.createBet(1, creatorReferrer.address, { value: (0.01).eth })
     })
 
     it('deletes an existing bet', async () => {
@@ -103,10 +103,7 @@ describe('Jelly', () => {
 
     it('refunds the bet amount less cancellation fees', async () => {
       // cancellation fee = 1%
-      await expect(await jelly.cancelBet(0)).to.changeEtherBalances(
-        [creator, owner],
-        [parseEther('0.0099'), parseEther('0.0001')]
-      )
+      await expect(await jelly.cancelBet(0)).to.changeEtherBalances([creator, owner], [(0.0099).eth, (0.0001).eth])
     })
 
     it('emits a BetCancelled event', async () => {
@@ -116,28 +113,28 @@ describe('Jelly', () => {
 
   describe('acceptBet', () => {
     beforeEach(async () => {
-      await jelly.createBet(1, creatorReferrer.address, { value: parseEther('0.01') })
+      await jelly.createBet(1, creatorReferrer.address, { value: (0.01).eth })
     })
 
     it("deducts bet amount from joiner's wallet", async () => {
       await expect(
-        await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') })
-      ).to.changeEtherBalances([joiner, jelly], [parseEther('-0.01'), parseEther('0.01')])
+        await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.01).eth })
+      ).to.changeEtherBalances([joiner, jelly], [(-0.01).eth, (0.01).eth])
     })
 
     it('emits BetAccepted event', async () => {
-      await expect(jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') }))
+      await expect(jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.01).eth }))
         .to.emit(jelly, 'BetAccepted')
         .withArgs(0, joiner.address)
     })
 
     it('sets joiner on the bet', async () => {
-      await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') })
+      await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.01).eth })
 
       const bet = await jelly.bets(0)
       expect({ ...bet }).to.deep.include({
         creator: creator.address,
-        value: parseEther('0.01'),
+        value: (0.01).eth,
         bet: 1,
         joiner: joiner.address
       })
@@ -145,7 +142,7 @@ describe('Jelly', () => {
 
     it('throws error if the bet is unfair', async () => {
       await expect(
-        jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.02') })
+        jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.02).eth })
       ).to.be.revertedWith('Jelly: Unfair bet')
     })
 
@@ -158,8 +155,8 @@ describe('Jelly', () => {
       let tx: ContractTransaction
 
       beforeEach(async () => {
-        await jelly.createBet(1, creatorReferrer.address, { value: parseEther('0.01') })
-        await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: parseEther('0.01') })
+        await jelly.createBet(1, creatorReferrer.address, { value: (0.01).eth })
+        await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.01).eth })
       })
 
       describe('concluded with even randomness', () => {
@@ -180,7 +177,7 @@ describe('Jelly', () => {
         it('sends reward to bet joiner', async () => {
           await expect(tx).to.changeEtherBalances(
             [owner, creator, creatorReferrer, joiner, joinerReferrer],
-            [parseEther('0.0008'), 0, 0, parseEther('0.019'), parseEther('0.0002'), 0, 0]
+            [(0.0008).eth, 0, 0, (0.019).eth, (0.0002).eth]
           )
         })
       })
@@ -203,7 +200,7 @@ describe('Jelly', () => {
         it('sends reward to bet creator', async () => {
           await expect(tx).to.changeEtherBalances(
             [owner, creator, creatorReferrer, joiner, joinerReferrer],
-            [parseEther('0.0008'), parseEther('0.019'), parseEther('0.0002'), 0, 0]
+            [(0.0008).eth, (0.019).eth, (0.0002).eth, 0, 0]
           )
         })
       })
