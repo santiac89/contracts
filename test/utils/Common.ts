@@ -7,6 +7,13 @@ export async function fastForward(t: number, dt = 60) {
   await ethers.provider.send('evm_mine', [])
 }
 
+export async function mineBlocks(n: number) {
+  if (!n) return
+
+  await ethers.provider.send('evm_mine', [])
+  await mineBlocks(n - 1)
+}
+
 let t = Date.now().ms
 
 export async function snapshot(callback: (t: number) => Promise<any>) {
@@ -17,5 +24,5 @@ export async function snapshot(callback: (t: number) => Promise<any>) {
 }
 
 export function hashEndingWith(s: string) {
-  return constants.HashZero.replace(/0$/, s)
+  return constants.HashZero.replace(new RegExp(`0{1,${s.length}}$`), s)
 }

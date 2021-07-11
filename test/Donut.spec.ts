@@ -81,6 +81,20 @@ describe('Donut', () => {
       await expect(donut.claim(0)).to.be.revertedWith("Donut: You didn't win")
     })
 
+    it('throws error if block hash is 0 (when time is up to claim)', async () => {
+      await donut.connect(owner).setBlockHash(hashEndingWith('0'))
+      await donut.placeBet(0, referrer.address, { value: (0.02).eth })
+
+      await expect(donut.claim(0)).to.be.revertedWith("Donut: You didn't win")
+
+      await donut.connect(owner).setBlockHash(hashEndingWith('f0')) // works fine
+      await donut.placeBet(0, referrer.address, { value: (0.02).eth })
+
+      const reward = (0.02).eth.mul(15)
+
+      await expect(await donut.claim(0)).to.changeEtherBalance(creator, reward.mul(95).div(100))
+    })
+
     describe('if won', () => {
       beforeEach(async () => {
         await donut.placeBet(15, referrer.address, { value: (0.02).eth })
