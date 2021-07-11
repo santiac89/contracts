@@ -66,11 +66,11 @@ describe('Donut', () => {
     })
 
     it('throws error if bet was not created by the sender', async () => {
-      await expect(donut.claim(0)).to.be.revertedWith("Donut: You didn't create this bet")
+      await expect(donut.claim(0)).to.be.revertedWith('Donut: Nothing to claim')
 
       await donut.placeBet(15, referrer.address, { value: (0.02).eth })
 
-      await expect(donut.connect(referrer).claim(0)).to.be.revertedWith("Donut: You didn't create this bet")
+      await expect(donut.connect(referrer).claim(0)).to.be.revertedWith('Donut: Nothing to claim')
 
       await expect(donut.claim(0)).to.emit(donut, 'BetClaimed') // works fine
     })

@@ -65,7 +65,7 @@ contract Donut is Ownable, SafeEntry {
   }
 
   function claim(uint64 id) external nonReentrant notContract {
-    require(bets[id].creator == msg.sender, "Donut: You didn't create this bet");
+    require(bets[id].creator == msg.sender, "Donut: Nothing to claim");
     require(hasWon(id), "Donut: You didn't win");
 
     send(payable(msg.sender), bets[id].value * multiplier);
