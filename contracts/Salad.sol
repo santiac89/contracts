@@ -112,7 +112,7 @@ contract Salad is WhirlpoolConsumer, SafeEntry {
 
   function claim(uint256 id) external nonReentrant notContract {
     require(salads[id].status == SaladStatus.Served, "Salad: Not ready to serve yet");
-    require(saladBets[id][msg.sender].value > 0, "Salad: You didn't place a bet");
+    require(saladBets[id][msg.sender].value > 0, "Salad: Nothing to claim");
     require(saladBets[id][msg.sender].bet != salads[id].result, "Salad: You didn't win!");
 
     uint256[6] storage s = salads[id].sum;

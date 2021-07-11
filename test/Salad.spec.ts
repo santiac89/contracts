@@ -355,7 +355,7 @@ describe('Salad', () => {
       await salad.prepareSalad(0)
       await salad.connect(owner).consumeRandomness(constants.HashZero, 4)
 
-      await expect(salad.connect(players[1]).claim(0)).to.be.revertedWith("Salad: You didn't place a bet")
+      await expect(salad.connect(players[1]).claim(0)).to.be.revertedWith('Salad: Nothing to claim')
     })
 
     describe('when salad is served; no jackpot', () => {
@@ -392,6 +392,16 @@ describe('Salad', () => {
               reward.mul(1).div(100)
             ]
           )
+        }
+      })
+
+      it('throws error if player tries to claim twice', async () => {
+        const winners = allBets().filter(({ bet }) => bet !== 4)
+
+        for (const { bet, value, player, referrer } of winners) {
+          await salad.connect(player).claim(0)
+
+          await expect(salad.connect(player).claim(0)).to.be.revertedWith('Salad: Nothing to claim')
         }
       })
     })
