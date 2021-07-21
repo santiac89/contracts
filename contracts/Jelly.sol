@@ -1,35 +1,29 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "./WhirlpoolConsumer.sol";
 import "./security/SafeEntry.sol";
+import "./utils/TransferWithCommission.sol";
 
-contract Jelly is WhirlpoolConsumer, SafeEntry {
+enum JellyType {
+  Strawberry,
+  Watermelon
+}
+
+struct JellyBet {
+  JellyType bet;
+  address creator;
+  address joiner;
+  uint256 value;
+}
+
+contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   using Address for address;
 
-  enum JellyType {
-    Strawberry,
-    Watermelon
-  }
-
-  struct JellyBet {
-    JellyType bet;
-    address creator;
-    address joiner;
-    uint256 value;
-  }
-
-  mapping(address => address) public referrers;
   mapping(uint256 => JellyBet) public bets;
 
-  uint16 public constant MAX_COMMISSION_RATE = 1000;
-
-  uint16 public commissionRate = 500;
-  uint16 public referralRate = 100;
-  uint16 public cancellationFee = 100;
-
   uint256 public numBets = 0;
-
   uint256 public minBet = 0.01 ether;
 
   event BetCreated(uint256 id, address creator, JellyType bet, uint256 value);
@@ -58,8 +52,7 @@ contract Jelly is WhirlpoolConsumer, SafeEntry {
   function cancelBet(uint256 id) external nonReentrant notContract {
     require(bets[id].creator == msg.sender, "Jelly: You didn't create this bet");
 
-    uint256 fee = (bets[id].value * cancellationFee) / 10000;
-    send(msg.sender, bets[id].value, fee, address(0));
+    refund(msg.sender, bets[id].value);
 
     emit BetCancelled(id);
     delete bets[id];
@@ -78,31 +71,14 @@ contract Jelly is WhirlpoolConsumer, SafeEntry {
     _requestRandomness(id);
   }
 
-  function setFees(
-    uint16 _commissionRate,
-    uint16 _referralRate,
-    uint16 _cancellationFee
-  ) external onlyOwner {
-    require(
-      _commissionRate <= MAX_COMMISSION_RATE && _referralRate <= _commissionRate && _cancellationFee <= _commissionRate,
-      "Jelly: Value exceeds max amount"
-    );
-
-    commissionRate = _commissionRate;
-    referralRate = _referralRate;
-    cancellationFee = _cancellationFee;
-  }
-
   function setMinBet(uint256 val) external onlyOwner {
     minBet = val;
   }
 
   function concludeBet(uint256 id, JellyType result) internal {
-    uint256 reward = bets[id].value * 2;
-    uint256 fee = (reward * commissionRate) / 10000;
     address winner = result == bets[id].bet ? bets[id].creator : bets[id].joiner;
 
-    send(winner, reward, fee, referrers[winner]);
+    send(winner, bets[id].value * 2);
 
     emit BetConcluded(id, referrers[winner], result);
 
@@ -111,24 +87,5 @@ contract Jelly is WhirlpoolConsumer, SafeEntry {
 
   function _consumeRandomness(uint256 id, uint256 randomness) internal override {
     concludeBet(id, JellyType(randomness % 2));
-  }
-
-  function send(
-    address to,
-    uint256 amount,
-    uint256 fee,
-    address referrer
-  ) internal {
-    Address.sendValue(payable(to), amount - fee);
-    if (fee == 0) return;
-
-    if (referrer != address(0)) {
-      uint256 refBonus = (amount * referralRate) / 10000;
-
-      Address.sendValue(payable(referrer), refBonus);
-      fee -= refBonus;
-    }
-
-    Address.sendValue(payable(owner()), fee);
   }
 }

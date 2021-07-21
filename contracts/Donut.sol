@@ -1,35 +1,29 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./security/SafeEntry.sol";
+import "./utils/TransferWithCommission.sol";
 
-contract Donut is Ownable, SafeEntry {
-  using Address for address;
+struct DonutBet {
+  uint8 bet;
+  address creator;
+  uint256 value;
+  uint256 block;
+}
 
+contract Donut is TransferWithCommission, SafeEntry {
   uint8 public constant MIN_MULTIPLIER = 10;
   uint8 public constant MAX_MULTIPLIER = 20;
   uint8 public multiplier = 15;
 
-  uint16 public constant MAX_COMMISSION_RATE = 1000;
   uint256 public MAX_EXPIRY = 4 days;
   uint256 public MIN_EXPIRY = 5 minutes;
-
-  uint16 public commissionRate = 500;
-  uint16 public referralRate = 100;
 
   uint256 public minBet = 0.001 ether;
   uint256 public maxBet = 0.1 ether;
 
-  struct DonutBet {
-    uint8 bet;
-    address creator;
-    uint256 value;
-    uint256 block;
-  }
-
   mapping(uint64 => DonutBet) public bets;
-  mapping(address => address) public referrers;
 
   uint64 public numBets = 0;
 
@@ -75,16 +69,6 @@ contract Donut is Ownable, SafeEntry {
     delete bets[id];
   }
 
-  function setFees(uint16 _commissionRate, uint16 _referralRate) external onlyOwner {
-    require(
-      _commissionRate <= MAX_COMMISSION_RATE && _referralRate <= _commissionRate,
-      "Salad: Value exceeds max amount"
-    );
-
-    commissionRate = _commissionRate;
-    referralRate = _referralRate;
-  }
-
   function setMinBet(uint256 val) external onlyOwner {
     minBet = val;
   }
@@ -108,22 +92,5 @@ contract Donut is Ownable, SafeEntry {
 
   function getBlockHash(uint256 blockNumber) internal view virtual returns (bytes32) {
     return blockhash(blockNumber);
-  }
-
-  function send(address to, uint256 amount) internal {
-    address referrer = referrers[to];
-    uint256 fee = (amount * commissionRate) / 10000;
-
-    Address.sendValue(payable(to), amount - fee);
-    if (fee == 0) return;
-
-    if (referrer != address(0)) {
-      uint256 refBonus = (amount * referralRate) / 10000;
-
-      Address.sendValue(payable(referrer), refBonus);
-      fee -= refBonus;
-    }
-
-    Address.sendValue(payable(owner()), fee);
   }
 }

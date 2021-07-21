@@ -80,7 +80,7 @@ describe('Salad', () => {
 
   async function increaseAllBets(n: BigNumber) {
     for (const player of players) {
-      await salad.connect(player).increaseIngredient(0, { value: n })
+      await salad.connect(player).increaseIngredient(0, 2, { value: n })
     }
   }
 
@@ -208,34 +208,45 @@ describe('Salad', () => {
       await fastForward((1).day)
       await salad.prepareSalad(0)
 
-      await expect(salad.increaseIngredient(0, { value: (0.1).eth })).to.be.revertedWith('Salad: Already prepared')
+      await expect(salad.increaseIngredient(0, 5, { value: (0.1).eth })).to.be.revertedWith('Salad: Already prepared')
     })
 
     it('throws error if time is up to place bet on this salad', async () => {
       await salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })
       await fastForward((1).day)
-      await expect(salad.connect(players[0]).increaseIngredient(0, { value: (0.1).eth })).to.be.revertedWith(
+      await expect(salad.connect(players[0]).increaseIngredient(0, 5, { value: (0.1).eth })).to.be.revertedWith(
         'Salad: Time is up!'
       )
     })
 
     it('throws error if bet amount is 0', async () => {
-      await expect(salad.increaseIngredient(0)).to.be.revertedWith('Salad: Value must be greater than 0')
+      await expect(salad.increaseIngredient(0, 5)).to.be.revertedWith('Salad: Value must be greater than 0')
     })
 
     it("increases the player's bet amount", async () => {
       await salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })
-      await salad.increaseIngredient(0, { value: (0.1).eth })
+      await salad.increaseIngredient(0, 5, { value: (0.1).eth })
 
       const bet = await salad.saladBets(0, players[0].address)
       expect(bet.value).to.eq((0.2).eth)
     })
 
+    it("updates player's bet2", async () => {
+      await salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })
+      let bet = await salad.saladBets(0, players[0].address)
+      expect(bet.bet2).to.eq(3)
+
+      await salad.increaseIngredient(0, 2, { value: (0.1).eth })
+
+      bet = await salad.saladBets(0, players[0].address)
+      expect(bet.bet2).to.eq(2)
+    })
+
     it('emits a IngredientIncreased event', async () => {
       await salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.15).eth })
-      await expect(salad.increaseIngredient(0, { value: (0.11).eth }))
+      await expect(salad.increaseIngredient(0, 5, { value: (0.11).eth }))
         .to.emit(salad, 'IngredientIncreased')
-        .withArgs(0, players[0].address, (0.26).eth)
+        .withArgs(0, players[0].address, 5, (0.26).eth)
     })
 
     it('increases total for each added bet, total sum and updates highest better', async () => {
@@ -433,6 +444,14 @@ describe('Salad', () => {
           [player, owner, referrer],
           [totalSum().mul(95).div(100), totalSum().mul(4).div(100), totalSum().mul(1).div(100)]
         )
+      })
+
+      it('throws error if jackpot winner tries to claim twice', async () => {
+        const { player } = highestBet()
+
+        await salad.connect(player).claim(0) // works fine
+
+        await expect(salad.connect(player).claim(0)).to.be.revertedWith('Salad: Nothing to claim')
       })
     })
   })

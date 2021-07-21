@@ -1,55 +1,52 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./WhirlpoolConsumer.sol";
 import "./security/SafeEntry.sol";
+import "./utils/TransferWithCommission.sol";
 
-contract Salad is WhirlpoolConsumer, SafeEntry {
+enum SaladStatus {
+  BowlCreated,
+  Prepared,
+  Served
+}
+
+struct SaladBet {
+  uint8 bet;
+  uint8 bet2;
+  uint256 value;
+}
+
+struct SaladBowl {
+  uint256[6] sum;
+  uint256 createdOn;
+  uint256 expiresOn;
+  uint256 maxBet;
+  address maxBetter;
+  SaladStatus status;
+  uint8 result;
+}
+
+contract Salad is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   using Address for address;
   using Math for uint256;
 
-  enum SaladStatus {
-    BowlCreated,
-    Prepared,
-    Served
-  }
-
-  struct SaladBet {
-    uint8 bet;
-    uint8 bet2;
-    uint256 value;
-  }
-
-  struct SaladBowl {
-    uint256[6] sum;
-    uint256 createdOn;
-    uint256 expiresOn;
-    uint256 maxBet;
-    address maxBetter;
-    SaladStatus status;
-    uint8 result;
-  }
-
   mapping(uint256 => SaladBowl) public salads;
   mapping(uint256 => mapping(address => SaladBet)) public saladBets;
-  mapping(address => address) public referrers;
 
-  uint16 public constant MAX_COMMISSION_RATE = 1000;
   uint256 public MAX_EXPIRY = 4 days;
   uint256 public MIN_EXPIRY = 5 minutes;
-
-  uint16 public commissionRate = 500;
-  uint16 public referralRate = 100;
 
   uint256 public minBet = 0.01 ether;
   uint256 public expiry = 1 days;
 
   uint256 public currentSalad = 0;
 
-  event IngredientAdded(uint256 id, address player, uint8 bet, uint8 bet2, uint256 value);
-  event IngredientIncreased(uint256 id, address player, uint256 newValue);
-  event Claimed(uint256 id, address player, uint256 value, address referrer);
+  event IngredientAdded(uint256 id, address creator, uint8 bet, uint8 bet2, uint256 value);
+  event IngredientIncreased(uint256 id, address creator, uint8 bet2, uint256 newValue);
+  event Claimed(uint256 id, address creator, uint256 value, address referrer);
 
   event SaladBowlCreated(uint256 id, uint256 expiresOn);
   event SaladPrepared(uint256 id);
@@ -85,18 +82,19 @@ contract Salad is WhirlpoolConsumer, SafeEntry {
     emit IngredientAdded(id, msg.sender, bet, bet2, msg.value);
   }
 
-  function increaseIngredient(uint256 id) external payable nonReentrant notContract {
+  function increaseIngredient(uint256 id, uint8 bet2) external payable nonReentrant notContract {
     require(msg.value > 0, "Salad: Value must be greater than 0");
     require(saladBets[id][msg.sender].value > 0, "Salad: No bet placed yet");
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
     require(salads[id].expiresOn > block.timestamp, "Salad: Time is up!");
 
     salads[id].sum[saladBets[id][msg.sender].bet] += msg.value;
+    saladBets[id][msg.sender].bet2 = bet2;
     saladBets[id][msg.sender].value += msg.value;
 
     setMaxBetForSalad(id, saladBets[id][msg.sender].value);
 
-    emit IngredientIncreased(id, msg.sender, saladBets[id][msg.sender].value);
+    emit IngredientIncreased(id, msg.sender, bet2, saladBets[id][msg.sender].value);
   }
 
   function prepareSalad(uint256 id) external nonReentrant notContract {
@@ -148,16 +146,6 @@ contract Salad is WhirlpoolConsumer, SafeEntry {
     return s[0] + s[1] + s[2] + s[3] + s[4] + s[5];
   }
 
-  function setFees(uint16 _commissionRate, uint16 _referralRate) external onlyOwner {
-    require(
-      _commissionRate <= MAX_COMMISSION_RATE && _referralRate <= _commissionRate,
-      "Salad: Value exceeds max amount"
-    );
-
-    commissionRate = _commissionRate;
-    referralRate = _referralRate;
-  }
-
   function setMinBet(uint256 val) external onlyOwner {
     minBet = val;
   }
@@ -194,22 +182,5 @@ contract Salad is WhirlpoolConsumer, SafeEntry {
 
   function _consumeRandomness(uint256 id, uint256 randomness) internal override {
     serveSalad(id, uint8(randomness % 6));
-  }
-
-  function send(address to, uint256 amount) internal {
-    address referrer = referrers[to];
-    uint256 fee = (amount * commissionRate) / 10000;
-
-    Address.sendValue(payable(to), amount - fee);
-    if (fee == 0) return;
-
-    if (referrer != address(0)) {
-      uint256 refBonus = (amount * referralRate) / 10000;
-
-      Address.sendValue(payable(referrer), refBonus);
-      fee -= refBonus;
-    }
-
-    Address.sendValue(payable(owner()), fee);
   }
 }

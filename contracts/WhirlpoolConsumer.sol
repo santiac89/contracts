@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -23,7 +24,9 @@ abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
       _consumeRandomness(
         id,
         uint256(
-          keccak256(abi.encodePacked(block.difficulty, block.timestamp, block.gaslimit, block.coinbase, block.number))
+          keccak256(
+            abi.encodePacked(id, block.difficulty, block.timestamp, block.gaslimit, block.coinbase, block.number)
+          )
         )
       );
     }
