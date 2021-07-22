@@ -12,8 +12,8 @@ cache:
 test:
   stage: build
   script:
-    - npm install
-    - npx hardhat coverage
+    - yarn
+    - yarn hardhat coverage
 
 pages:
   stage: deploy
