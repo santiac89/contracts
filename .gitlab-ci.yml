@@ -2,17 +2,24 @@ image: node:latest
 
 stages:
   - build
+  - test
   - deploy
 
 cache:
   paths:
     - node_modules/
     - coverage/
+    - artifacts/
 
-test:
+compile:
   stage: build
   script:
     - yarn
+    - yarn hardhat compile
+
+test:
+  stage: test
+  script:
     - yarn hardhat coverage
 
 pages:
