@@ -7,7 +7,7 @@ import "./interfaces/IWhirlpoolConsumer.sol";
 import "./interfaces/IWhirlpool.sol";
 
 abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
-  IWhirlpool whirlpool;
+  IWhirlpool internal whirlpool;
   mapping(bytes32 => uint256) internal activeRequests;
 
   bool public whirlpoolEnabled = false;
@@ -21,14 +21,11 @@ abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
       bytes32 requestId = whirlpool.request();
       activeRequests[requestId] = id;
     } else {
-      _consumeRandomness(
-        id,
-        uint256(
-          keccak256(
-            abi.encodePacked(id, block.difficulty, block.timestamp, block.gaslimit, block.coinbase, block.number)
-          )
-        )
+      bytes32 random = keccak256(
+        // solhint-disable-next-line not-rely-on-time
+        abi.encodePacked(id, block.difficulty, block.timestamp, block.gaslimit, block.coinbase, block.number)
       );
+      _consumeRandomness(id, uint256(random));
     }
   }
 
@@ -49,10 +46,7 @@ abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
   function _consumeRandomness(uint256 id, uint256 randomness) internal virtual;
 
   modifier onlyWhirlpoolOrOwner() {
-    require(
-      msg.sender == address(whirlpool) || msg.sender == owner(),
-      "WhirlpoolConsumer: Only whirlpool or owner can call this function"
-    );
+    require(msg.sender == address(whirlpool) || msg.sender == owner(), "Not owner/whirlpool");
     _;
   }
 }

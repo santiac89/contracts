@@ -6,6 +6,7 @@
   "author": "Kevin <kevin@juicy.bet>",
   "license": "MIT",
   "scripts": {
+    "lint": "solhint 'contracts/**/*.sol'",
     "test": "hardhat test",
     "testnet-deploy-whirlpool": "hardhat run --network testnet scripts/Whirlpool.deploy.testnet.ts",
     "testnet-verify-whirlpool": "hardhat verify --constructor-args scripts/Whirlpool.args.testnet.ts --network testnet",
@@ -30,6 +31,8 @@
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "sinon": "^11.1.1",
+    "solhint": "^3.3.6",
+    "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.16",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.5"

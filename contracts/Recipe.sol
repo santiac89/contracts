@@ -26,12 +26,13 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   Round[] internal rounds;
   uint256 public currentRound;
 
+  // solhint-disable no-empty-blocks
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) {}
 
   function createBid(uint256 id, address referrer) external payable notContract nonReentrant {
-    require(currentRound == id, "Recipe: Can only bet in current round");
-    require(rounds[id].winner == address(0), "Recipe: Winner already declared for this round");
-    require(msg.value > 0, "Salad: Value can't be 0");
+    require(currentRound == id, "Can only bet in current round");
+    require(rounds[id].winner == address(0), "Round has ended");
+    require(msg.value > 0, "Value can't be 0");
 
     Round storage round = rounds[id];
 
@@ -57,7 +58,7 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
     Round storage round = rounds[id];
 
     if (msg.sender == round.winner) {
-      require(round.pendingReward != 0, "Recipe: Nothing to claim");
+      require(round.pendingReward != 0, "Nothing to claim");
 
       send(round.winner, round.pendingReward);
       round.pendingReward = 0;
@@ -65,7 +66,7 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
     }
 
     uint256 myBid = round.biddersToBids[msg.sender];
-    require(myBid != 0, "Recipe: Nothing to claim");
+    require(myBid != 0, "Nothing to claim");
 
     uint256 myReward = (round.pendingReward * round.total) / myBid;
     round.pendingReward -= myReward;

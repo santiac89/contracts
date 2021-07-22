@@ -31,10 +31,11 @@ contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   event BetAccepted(uint256 id, address joiner);
   event BetConcluded(uint256 id, address referrer, JellyType result);
 
+  // solhint-disable no-empty-blocks
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) {}
 
   function createBet(JellyType bet, address referrer) external payable nonReentrant notContract {
-    require(msg.value >= minBet, "Jelly: Bet amount is lower than minimum bet amount");
+    require(msg.value >= minBet, "Bet amount is less than minimum");
 
     uint256 id = numBets;
 
@@ -50,7 +51,7 @@ contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   }
 
   function cancelBet(uint256 id) external nonReentrant notContract {
-    require(bets[id].creator == msg.sender, "Jelly: You didn't create this bet");
+    require(bets[id].creator == msg.sender, "You didn't create this bet");
 
     refund(msg.sender, bets[id].value);
 
@@ -59,9 +60,9 @@ contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   }
 
   function acceptBet(uint256 id, address referrer) external payable nonReentrant notContract {
-    require(bets[id].value != 0, "Jelly: Bet is unavailable");
-    require(bets[id].joiner == address(0), "Jelly: Bet is already accepted");
-    require(msg.value == bets[id].value, "Jelly: Unfair bet");
+    require(bets[id].value != 0, "Bet is unavailable");
+    require(bets[id].joiner == address(0), "Bet is already accepted");
+    require(msg.value == bets[id].value, "Unfair bet");
 
     bets[id].joiner = msg.sender;
     referrers[msg.sender] = referrer;

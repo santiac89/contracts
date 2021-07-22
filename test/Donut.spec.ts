@@ -25,13 +25,13 @@ describe('Donut', () => {
   describe('placeBet', () => {
     it('throws error if bet amount is less than min', async () => {
       await expect(donut.placeBet(3, referrer.address, { value: (0.0001).eth })).to.be.revertedWith(
-        'Donut: Bet amount is less than minimum'
+        'Bet is less than minimum'
       )
     })
 
     it('throws error if bet amount is more than max', async () => {
       await expect(donut.placeBet(3, referrer.address, { value: (1).eth })).to.be.revertedWith(
-        'Donut: Bet amount is more than maximum'
+        'Bet is more than maximum'
       )
     })
 
@@ -66,11 +66,11 @@ describe('Donut', () => {
     })
 
     it('throws error if bet was not created by the sender', async () => {
-      await expect(donut.claim(0)).to.be.revertedWith('Donut: Nothing to claim')
+      await expect(donut.claim(0)).to.be.revertedWith('Nothing to claim')
 
       await donut.placeBet(15, referrer.address, { value: (0.02).eth })
 
-      await expect(donut.connect(referrer).claim(0)).to.be.revertedWith('Donut: Nothing to claim')
+      await expect(donut.connect(referrer).claim(0)).to.be.revertedWith('Nothing to claim')
 
       await expect(donut.claim(0)).to.emit(donut, 'BetClaimed') // works fine
     })
@@ -78,14 +78,14 @@ describe('Donut', () => {
     it("throws error if player didn't win", async () => {
       await donut.placeBet(4, referrer.address, { value: (0.02).eth })
 
-      await expect(donut.claim(0)).to.be.revertedWith("Donut: You didn't win")
+      await expect(donut.claim(0)).to.be.revertedWith("You didn't win")
     })
 
     it('throws error if block hash is 0 (when time is up to claim)', async () => {
       await donut.connect(owner).setBlockHash(hashEndingWith('0'))
       await donut.placeBet(0, referrer.address, { value: (0.02).eth })
 
-      await expect(donut.claim(0)).to.be.revertedWith("Donut: You didn't win")
+      await expect(donut.claim(0)).to.be.revertedWith("You didn't win")
 
       await donut.connect(owner).setBlockHash(hashEndingWith('f0')) // works fine
       await donut.placeBet(0, referrer.address, { value: (0.02).eth })

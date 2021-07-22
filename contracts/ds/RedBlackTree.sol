@@ -48,7 +48,7 @@ library RedBlackTree {
   }
 
   function next(Tree storage self, uint256 target) internal view returns (uint256 cursor) {
-    require(target != EMPTY);
+    if (target == EMPTY) return 0;
     if (self.nodes[target].right != EMPTY) {
       cursor = treeMinimum(self, self.nodes[target].right);
     } else {
@@ -61,7 +61,7 @@ library RedBlackTree {
   }
 
   function prev(Tree storage self, uint256 target) internal view returns (uint256 cursor) {
-    require(target != EMPTY);
+    if (target == EMPTY) return 0;
     if (self.nodes[target].left != EMPTY) {
       cursor = treeMaximum(self, self.nodes[target].left);
     } else {
@@ -96,13 +96,12 @@ library RedBlackTree {
       bool _red
     )
   {
-    require(exists(self, key));
+    require(exists(self, key), "Key doesn't exist");
     return (key, self.nodes[key].parent, self.nodes[key].left, self.nodes[key].right, self.nodes[key].red);
   }
 
   function insert(Tree storage self, uint256 key) internal {
-    require(key != EMPTY);
-    if (!exists(self, key)) return;
+    if (!exists(self, key) || key == EMPTY) return;
 
     uint256 cursor = EMPTY;
     uint256 probe = self.root;
@@ -126,8 +125,7 @@ library RedBlackTree {
   }
 
   function remove(Tree storage self, uint256 key) internal {
-    require(key != EMPTY);
-    if (exists(self, key)) return;
+    if (exists(self, key) || key == EMPTY) return;
 
     uint256 probe;
     uint256 cursor;

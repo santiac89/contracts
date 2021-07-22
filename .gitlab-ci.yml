@@ -17,6 +17,11 @@ compile:
     - yarn
     - yarn hardhat compile
 
+lint:
+  stage: test
+  script:
+    - yarn lint
+
 test:
   stage: test
   script:

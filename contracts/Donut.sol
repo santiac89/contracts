@@ -17,8 +17,8 @@ contract Donut is TransferWithCommission, SafeEntry {
   uint8 public constant MAX_MULTIPLIER = 20;
   uint8 public multiplier = 15;
 
-  uint256 public MAX_EXPIRY = 4 days;
-  uint256 public MIN_EXPIRY = 5 minutes;
+  uint256 public constant MAX_EXPIRY = 4 days;
+  uint256 public constant MIN_EXPIRY = 5 minutes;
 
   uint256 public minBet = 0.001 ether;
   uint256 public maxBet = 0.1 ether;
@@ -41,8 +41,8 @@ contract Donut is TransferWithCommission, SafeEntry {
   }
 
   function placeBet(uint8 bet, address referrer) external payable nonReentrant notContract {
-    require(msg.value >= minBet, "Donut: Bet amount is less than minimum");
-    require(msg.value <= maxBet, "Donut: Bet amount is more than maximum");
+    require(msg.value >= minBet, "Bet is less than minimum");
+    require(msg.value <= maxBet, "Bet is more than maximum");
 
     uint64 id = numBets;
 
@@ -59,8 +59,8 @@ contract Donut is TransferWithCommission, SafeEntry {
   }
 
   function claim(uint64 id) external nonReentrant notContract {
-    require(bets[id].creator == msg.sender, "Donut: Nothing to claim");
-    require(hasWon(id), "Donut: You didn't win");
+    require(bets[id].creator == msg.sender, "Nothing to claim");
+    require(hasWon(id), "You didn't win");
 
     send(payable(msg.sender), bets[id].value * multiplier);
 
@@ -78,13 +78,15 @@ contract Donut is TransferWithCommission, SafeEntry {
   }
 
   function setMultiplier(uint8 val) external onlyOwner {
-    require(val <= MAX_MULTIPLIER, "Donut: Value exceeds max amount");
-    require(val >= MIN_MULTIPLIER, "Donut: Value is below min amount");
+    require(val <= MAX_MULTIPLIER, "Value exceeds max amount");
+    require(val >= MIN_MULTIPLIER, "Value is below min amount");
 
     multiplier = val;
   }
 
-  function deposit() external payable {}
+  function deposit() external payable {
+    return;
+  }
 
   function withdraw(uint256 amount) external onlyOwner {
     Address.sendValue(payable(owner()), amount);

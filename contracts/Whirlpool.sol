@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -69,7 +70,7 @@ contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
   }
 
   modifier onlyOwnerOrSameOwner(address consumer) {
-    require(msg.sender == owner() || Ownable(consumer).owner() == owner(), "Whirlpool: Only owner can add consumer");
+    require(msg.sender == owner() || Ownable(consumer).owner() == owner(), "Whirlpool: Not owner");
     _;
   }
 }

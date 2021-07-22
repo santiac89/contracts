@@ -104,7 +104,7 @@ describe('Salad', () => {
   describe('addIngredient', () => {
     it('throws error if not betting on the current salad', async () => {
       await expect(salad.addIngredient(1, 1, 3, referrers[0].address, { value: (0.001).eth })).to.be.revertedWith(
-        'Salad: Can only bet in current salad'
+        'Can only bet in current salad'
       )
     })
 
@@ -115,11 +115,11 @@ describe('Salad', () => {
 
       await expect(
         salad.connect(players[1]).addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })
-      ).to.be.revertedWith('Salad: Already prepared')
+      ).to.be.revertedWith('Already prepared')
     })
 
     it('throws error if bet is for anything other than 0-5', async () => {
-      const msg = 'Salad: Can only bet 0-5'
+      const msg = 'Can only bet 0-5'
 
       await expect(salad.addIngredient(0, 1, 7, referrers[0].address)).to.be.revertedWith(msg)
       await expect(salad.addIngredient(0, 7, 1, referrers[0].address)).to.be.revertedWith(msg)
@@ -130,7 +130,7 @@ describe('Salad', () => {
       await salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })
 
       await expect(salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })).to.be.revertedWith(
-        'Salad: Already placed bet'
+        'Already placed bet'
       )
     })
 
@@ -139,12 +139,12 @@ describe('Salad', () => {
       await fastForward((1).day)
       await expect(
         salad.connect(players[1]).addIngredient(0, 1, 3, referrers[1].address, { value: (0.1).eth })
-      ).to.be.revertedWith('Salad: Time is up!')
+      ).to.be.revertedWith('Time is up!')
     })
 
     it('throws error if bet amount is less than min bet', async () => {
       await expect(salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.001).eth })).to.be.revertedWith(
-        'Salad: Value must be greater than min bet'
+        'Value is less than minimum'
       )
     })
 
@@ -207,24 +207,24 @@ describe('Salad', () => {
       await fastForward((1).day)
       await salad.prepareSalad(0)
 
-      await expect(salad.increaseIngredient(0, 5, { value: (0.1).eth })).to.be.revertedWith('Salad: Already prepared')
+      await expect(salad.increaseIngredient(0, 5, { value: (0.1).eth })).to.be.revertedWith('Already prepared')
     })
 
     it('throws error if time is up to place bet on this salad', async () => {
       await salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })
       await fastForward((1).day)
       await expect(salad.connect(players[0]).increaseIngredient(0, 5, { value: (0.1).eth })).to.be.revertedWith(
-        'Salad: Time is up!'
+        'Time is up!'
       )
     })
 
     it('throws error if bet amount is 0', async () => {
-      await expect(salad.increaseIngredient(0, 5)).to.be.revertedWith('Salad: Value must be greater than 0')
+      await expect(salad.increaseIngredient(0, 5)).to.be.revertedWith('Value must be greater than 0')
     })
 
     it('throws error if no bet was placed by the player', async () => {
       await expect(salad.connect(players[1]).increaseIngredient(0, 5, { value: (0.1).eth })).to.be.revertedWith(
-        'Salad: No bet placed yet'
+        'No bet placed yet'
       )
     })
 
@@ -280,14 +280,14 @@ describe('Salad', () => {
     it('throws error if time is not yet up for this salad', async () => {
       await fastForward((12).hours)
 
-      await expect(salad.prepareSalad(0)).to.be.revertedWith('Salad: Time is not up yet!')
+      await expect(salad.prepareSalad(0)).to.be.revertedWith('Time is not up yet!')
     })
 
     it('throws error if salad status is already Prepared', async () => {
       await fastForward((1).day)
       await salad.prepareSalad(0)
 
-      await expect(salad.prepareSalad(0)).to.be.revertedWith('Salad: Already prepared')
+      await expect(salad.prepareSalad(0)).to.be.revertedWith('Already prepared')
     })
 
     it('sets salad status to Prepared', async () => {
@@ -350,12 +350,12 @@ describe('Salad', () => {
     it('throws error if salad status is not Served; process claim otherwise', async () => {
       await salad.addIngredient(0, 1, 3, constants.AddressZero, { value: (0.1).eth })
 
-      await expect(salad.claim(0)).to.be.revertedWith('Salad: Not ready to serve yet')
+      await expect(salad.claim(0)).to.be.revertedWith('Not ready to serve yet')
 
       await fastForward((1).day)
       await salad.prepareSalad(0)
 
-      await expect(salad.claim(0)).to.be.revertedWith('Salad: Not ready to serve yet')
+      await expect(salad.claim(0)).to.be.revertedWith('Not ready to serve yet')
 
       await salad.connect(owner).consumeRandomness(constants.HashZero, 4)
 
@@ -371,7 +371,7 @@ describe('Salad', () => {
       await salad.prepareSalad(0)
       await salad.connect(owner).consumeRandomness(constants.HashZero, 4)
 
-      await expect(salad.connect(players[1]).claim(0)).to.be.revertedWith('Salad: Nothing to claim')
+      await expect(salad.connect(players[1]).claim(0)).to.be.revertedWith('Nothing to claim')
     })
 
     describe('when salad is served; no jackpot', () => {
@@ -390,7 +390,7 @@ describe('Salad', () => {
           .map(({ player }) => player)
 
         for (const player of losers) {
-          await expect(salad.connect(player).claim(0)).to.be.revertedWith("Salad: You didn't win!")
+          await expect(salad.connect(player).claim(0)).to.be.revertedWith("You didn't win!")
         }
       })
 
@@ -417,7 +417,7 @@ describe('Salad', () => {
         for (const { bet, value, player, referrer } of winners) {
           await salad.connect(player).claim(0)
 
-          await expect(salad.connect(player).claim(0)).to.be.revertedWith('Salad: Nothing to claim')
+          await expect(salad.connect(player).claim(0)).to.be.revertedWith('Nothing to claim')
         }
       })
     })
@@ -438,7 +438,7 @@ describe('Salad', () => {
           .filter(p => p != highestBet().player)
 
         for (const player of remainingPlayers) {
-          await expect(salad.connect(player).claim(0)).to.be.revertedWith("Salad: You didn't win!")
+          await expect(salad.connect(player).claim(0)).to.be.revertedWith("You didn't win!")
         }
       })
 
@@ -456,7 +456,7 @@ describe('Salad', () => {
 
         await salad.connect(player).claim(0) // works fine
 
-        await expect(salad.connect(player).claim(0)).to.be.revertedWith('Salad: Nothing to claim')
+        await expect(salad.connect(player).claim(0)).to.be.revertedWith('Nothing to claim')
       })
     })
   })

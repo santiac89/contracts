@@ -65,7 +65,7 @@ describe('Jelly', () => {
         jelly.createBet(1, creatorReferrer.address, {
           value: (0.001).eth
         })
-      ).to.be.revertedWith('Jelly: Bet amount is lower than minimum bet amount')
+      ).to.be.revertedWith('Bet amount is less than minimum')
     })
 
     it('throws an error if bet is on anything other than 0 or 1', async () => {
@@ -97,7 +97,7 @@ describe('Jelly', () => {
     })
 
     it('throws error if anyone else other than the creator tries to cancel the bet', async () => {
-      await expect(jelly.connect(joiner).cancelBet(0)).to.be.revertedWith("Jelly: You didn't create this bet")
+      await expect(jelly.connect(joiner).cancelBet(0)).to.be.revertedWith("You didn't create this bet")
     })
 
     it('refunds the bet amount less cancellation fees', async () => {
@@ -142,11 +142,11 @@ describe('Jelly', () => {
     it('throws error if the bet is unfair', async () => {
       await expect(
         jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.02).eth })
-      ).to.be.revertedWith('Jelly: Unfair bet')
+      ).to.be.revertedWith('Unfair bet')
     })
 
     it('throws error if bet is unavailable', async () => {
-      await expect(jelly.acceptBet(1, joinerReferrer.address)).to.be.revertedWith('Jelly: Bet is unavailable')
+      await expect(jelly.acceptBet(1, joinerReferrer.address)).to.be.revertedWith('Bet is unavailable')
     })
 
     describe('on bet concluded', () => {

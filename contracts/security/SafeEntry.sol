@@ -9,6 +9,8 @@ abstract contract SafeEntry is ReentrancyGuard {
 
   modifier notContract() {
     require(!Address.isContract(msg.sender), "Contract not allowed");
+
+    // solhint-disable-next-line avoid-tx-origin
     require(msg.sender == tx.origin, "Proxy contract not allowed");
     _;
   }
