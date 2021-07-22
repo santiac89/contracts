@@ -8,3 +8,7 @@ artifacts
 # Secrets
 .secret.*
 .bscscan
+
+# Coverage
+coverage.json
+coverage

@@ -3,7 +3,6 @@ import { expect } from 'chai'
 import { Contract } from '@ethersproject/contracts'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, constants, ContractFactory, ContractTransaction } from 'ethers'
-import Salad from '../artifacts/contracts/Salad.sol/Salad.json'
 import IWhirlpool from '../artifacts/contracts/interfaces/IWhirlpool.sol/IWhirlpool.json'
 import { MockContract } from 'ethereum-waffle'
 import './utils/NumberExtensions'
@@ -221,6 +220,12 @@ describe('Salad', () => {
 
     it('throws error if bet amount is 0', async () => {
       await expect(salad.increaseIngredient(0, 5)).to.be.revertedWith('Salad: Value must be greater than 0')
+    })
+
+    it('throws error if no bet was placed by the player', async () => {
+      await expect(salad.connect(players[1]).increaseIngredient(0, 5, { value: (0.1).eth })).to.be.revertedWith(
+        'Salad: No bet placed yet'
+      )
     })
 
     it("increases the player's bet amount", async () => {

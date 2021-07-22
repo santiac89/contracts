@@ -1,6 +1,7 @@
 import { task } from 'hardhat/config'
 import '@nomiclabs/hardhat-waffle'
 import '@nomiclabs/hardhat-etherscan'
+import 'solidity-coverage'
 import fs from 'fs'
 
 function readFile(path: string) {
