@@ -77,31 +77,8 @@ library RedBlackTree {
     return (key != EMPTY) && ((key == self.root) || (self.nodes[key].parent != EMPTY));
   }
 
-  function isEmpty(uint256 key) internal pure returns (bool) {
-    return key == EMPTY;
-  }
-
-  function getEmpty() internal pure returns (uint256) {
-    return EMPTY;
-  }
-
-  function getNode(Tree storage self, uint256 key)
-    internal
-    view
-    returns (
-      uint256 _returnKey,
-      uint256 _parent,
-      uint256 _left,
-      uint256 _right,
-      bool _red
-    )
-  {
-    require(exists(self, key), "Key doesn't exist");
-    return (key, self.nodes[key].parent, self.nodes[key].left, self.nodes[key].right, self.nodes[key].red);
-  }
-
   function insert(Tree storage self, uint256 key) internal {
-    if (!exists(self, key) || key == EMPTY) return;
+    if (exists(self, key) || key == EMPTY) return;
 
     uint256 cursor = EMPTY;
     uint256 probe = self.root;
@@ -125,7 +102,7 @@ library RedBlackTree {
   }
 
   function remove(Tree storage self, uint256 key) internal {
-    if (exists(self, key) || key == EMPTY) return;
+    if (!exists(self, key) || key == EMPTY) return;
 
     uint256 probe;
     uint256 cursor;
