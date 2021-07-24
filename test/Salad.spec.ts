@@ -360,8 +360,8 @@ describe('Salad', () => {
       await salad.connect(owner).consumeRandomness(constants.HashZero, 4)
 
       await expect(await salad.claim(0)).to.changeEtherBalances(
-        [owner, players[0]],
-        [(0.1).eth.mul(5).div(100), (0.1).eth.mul(95).div(100)]
+        [salad, owner, players[0]],
+        [(-0.1).eth, (0.1).eth.mul(5).div(100), (0.1).eth.mul(95).div(100)]
       )
     })
 
@@ -401,8 +401,9 @@ describe('Salad', () => {
         for (const { bet, value, player, referrer } of winners) {
           const reward = betSum(bet).add(losersPot).mul(value).div(betSum(bet))
           await expect(await salad.connect(player).claim(0)).to.changeEtherBalances(
-            [player, owner, referrer],
+            [salad, player, owner, referrer],
             [
+              reward.mul(-1),
               reward.sub(reward.mul(5).div(100)), // 95%
               reward.mul(5).div(100).sub(reward.mul(1).div(100)), // 4%
               reward.mul(1).div(100)
@@ -458,8 +459,8 @@ describe('Salad', () => {
         const { player, referrer } = highestBet()
 
         await expect(await salad.connect(player).claim(0)).to.changeEtherBalances(
-          [player, owner, referrer],
-          [totalSum().mul(95).div(100), totalSum().mul(4).div(100), totalSum().mul(1).div(100)]
+          [salad, player, owner, referrer],
+          [totalSum().mul(-1), totalSum().mul(95).div(100), totalSum().mul(4).div(100), totalSum().mul(1).div(100)]
         )
       })
 

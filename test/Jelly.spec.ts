@@ -44,8 +44,8 @@ describe('Jelly', () => {
 
     it("deducts bet amount from creator's wallet", async () => {
       await expect(await jelly.createBet(1, creatorReferrer.address, { value: (0.01).eth })).to.changeEtherBalances(
-        [creator, jelly],
-        [(-0.01).eth, (0.01).eth]
+        [jelly, creator],
+        [(0.01).eth, (-0.01).eth]
       )
     })
 
@@ -103,7 +103,10 @@ describe('Jelly', () => {
 
     it('refunds the bet amount less cancellation fees', async () => {
       // cancellation fee = 1%
-      await expect(await jelly.cancelBet(0)).to.changeEtherBalances([creator, owner], [(0.0099).eth, (0.0001).eth])
+      await expect(await jelly.cancelBet(0)).to.changeEtherBalances(
+        [jelly, creator, owner],
+        [(-0.01).eth, (0.0099).eth, (0.0001).eth]
+      )
     })
 
     it('emits a BetCancelled event', async () => {
@@ -119,7 +122,7 @@ describe('Jelly', () => {
     it("deducts bet amount from joiner's wallet", async () => {
       await expect(
         await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.01).eth })
-      ).to.changeEtherBalances([joiner, jelly], [(-0.01).eth, (0.01).eth])
+      ).to.changeEtherBalances([jelly, joiner], [(0.01).eth, (-0.01).eth])
     })
 
     it('emits BetAccepted event', async () => {
@@ -184,8 +187,8 @@ describe('Jelly', () => {
 
         it('sends reward to bet joiner', async () => {
           await expect(tx).to.changeEtherBalances(
-            [owner, creator, creatorReferrer, joiner, joinerReferrer],
-            [(0.0008).eth, 0, 0, (0.019).eth, (0.0002).eth]
+            [jelly, owner, creator, creatorReferrer, joiner, joinerReferrer],
+            [(-0.02).eth, (0.0008).eth, 0, 0, (0.019).eth, (0.0002).eth]
           )
         })
       })
@@ -207,8 +210,8 @@ describe('Jelly', () => {
 
         it('sends reward to bet creator', async () => {
           await expect(tx).to.changeEtherBalances(
-            [owner, creator, creatorReferrer, joiner, joinerReferrer],
-            [(0.0008).eth, (0.019).eth, (0.0002).eth, 0, 0]
+            [jelly, owner, creator, creatorReferrer, joiner, joinerReferrer],
+            [(-0.02).eth, (0.0008).eth, (0.019).eth, (0.0002).eth, 0, 0]
           )
         })
       })

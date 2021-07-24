@@ -2,7 +2,6 @@ import { task } from 'hardhat/config'
 import '@typechain/hardhat'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
-import '@nomiclabs/hardhat-solhint'
 import 'solidity-coverage'
 import fs from 'fs'
 

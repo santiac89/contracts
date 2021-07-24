@@ -31,8 +31,8 @@ describe('TransferWithCommission', () => {
     it('sends the amount to the recipient less fees and referral if referral is set', async () => {
       await transferUtil.setReferrer(player.address, referrer.address)
       await expect(await transferUtil.testSend(player.address, (1).eth)).to.changeEtherBalances(
-        [player, owner, referrer],
-        [(0.95).eth, (0.04).eth, (0.01).eth]
+        [transferUtil, player, owner, referrer],
+        [(-1).eth, (0.95).eth, (0.04).eth, (0.01).eth]
       )
     })
 
@@ -40,8 +40,8 @@ describe('TransferWithCommission', () => {
       await transferUtil.setFees(0, 0, 0)
       await transferUtil.setReferrer(player.address, referrer.address)
       await expect(await transferUtil.testSend(player.address, (1).eth)).to.changeEtherBalances(
-        [player, owner, referrer],
-        [(1).eth, 0, 0]
+        [transferUtil, player, owner, referrer],
+        [(-1).eth, (1).eth, 0, 0]
       )
     })
   })
@@ -49,16 +49,16 @@ describe('TransferWithCommission', () => {
   describe('refund', () => {
     it('sends the amount to the recipient less fees', async () => {
       await expect(await transferUtil.testRefund(player.address, (1).eth)).to.changeEtherBalances(
-        [player, owner],
-        [(0.99).eth, (0.01).eth]
+        [transferUtil, player, owner],
+        [(-1).eth, (0.99).eth, (0.01).eth]
       )
     })
 
     it('sends full amount to the recipient if fee is 0', async () => {
       await transferUtil.setFees(0, 0, 0)
       await expect(await transferUtil.testRefund(player.address, (1).eth)).to.changeEtherBalances(
-        [player, owner],
-        [(1).eth, 0]
+        [transferUtil, player, owner],
+        [(-1).eth, (1).eth, 0]
       )
     })
   })
@@ -68,12 +68,12 @@ describe('TransferWithCommission', () => {
       await transferUtil.setFees(1000, 800, 400)
       await transferUtil.setReferrer(player.address, referrer.address)
       await expect(await transferUtil.testSend(player.address, (1).eth)).to.changeEtherBalances(
-        [player, owner, referrer],
-        [(0.9).eth, (0.02).eth, (0.08).eth]
+        [transferUtil, player, owner, referrer],
+        [(-1).eth, (0.9).eth, (0.02).eth, (0.08).eth]
       )
       await expect(await transferUtil.testRefund(player.address, (1).eth)).to.changeEtherBalances(
-        [player, owner],
-        [(0.96).eth, (0.04).eth]
+        [transferUtil, player, owner],
+        [(-1).eth, (0.96).eth, (0.04).eth]
       )
     })
 

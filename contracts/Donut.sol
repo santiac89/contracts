@@ -14,8 +14,6 @@ struct DonutBet {
 }
 
 contract Donut is TransferWithCommission, ValueLimits, SafeEntry {
-  uint8 public constant MIN_MULTIPLIER = 10;
-  uint8 public constant MAX_MULTIPLIER = 20;
   uint8 public multiplier = 15;
 
   uint256 public constant MAX_EXPIRY = 4 days;
@@ -68,15 +66,11 @@ contract Donut is TransferWithCommission, ValueLimits, SafeEntry {
   }
 
   function setMultiplier(uint8 val) external onlyOwner {
-    require(val <= MAX_MULTIPLIER, "Donut: Value exceeds max amount");
-    require(val >= MIN_MULTIPLIER, "Donut: Value is below min amount");
-
     multiplier = val;
   }
 
-  function deposit() external payable {
-    return;
-  }
+  // solhint-disable no-empty-blocks
+  function deposit() external payable {}
 
   function withdraw(uint256 amount) external onlyOwner {
     Address.sendValue(payable(owner()), amount);
