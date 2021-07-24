@@ -1,4 +1,4 @@
-import { constants } from 'ethers/lib/ethers'
+import { BigNumber, constants } from 'ethers/lib/ethers'
 import { ethers } from 'hardhat'
 import './NumberExtensions'
 
@@ -25,4 +25,12 @@ export async function snapshot(callback: (t: number) => Promise<any>) {
 
 export function hashEndingWith(s: string) {
   return constants.HashZero.replace(new RegExp(`0{1,${s.length}}$`), s)
+}
+
+export function sorted(arr: BigNumber[]) {
+  return [...arr].sort((a, b) => {
+    if (a.lt(b)) return -1
+    if (a.gt(b)) return 1
+    return 0
+  })
 }

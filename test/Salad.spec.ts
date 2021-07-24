@@ -411,6 +411,18 @@ describe('Salad', () => {
         }
       })
 
+      it('emits a Claimed event', async () => {
+        const winners = allBets().filter(({ bet }) => bet !== 4)
+
+        const losersPot = betSum(4).div(5)
+        for (const { bet, value, player, referrer } of winners) {
+          const reward = betSum(bet).add(losersPot).mul(value).div(betSum(bet))
+          await expect(salad.connect(player).claim(0))
+            .to.emit(salad, 'Claimed')
+            .withArgs(0, player.address, reward, referrer.address)
+        }
+      })
+
       it('throws error if player tries to claim twice', async () => {
         const winners = allBets().filter(({ bet }) => bet !== 4)
 
@@ -449,6 +461,14 @@ describe('Salad', () => {
           [player, owner, referrer],
           [totalSum().mul(95).div(100), totalSum().mul(4).div(100), totalSum().mul(1).div(100)]
         )
+      })
+
+      it('emits a Claimed event when the jackpot winner claims', async () => {
+        const { player, referrer } = highestBet()
+
+        await expect(await salad.connect(player).claim(0))
+          .to.emit(salad, 'Claimed')
+          .withArgs(0, player.address, totalSum(), referrer.address)
       })
 
       it('throws error if jackpot winner tries to claim twice', async () => {

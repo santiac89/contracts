@@ -7,9 +7,7 @@ import "../ds/RedBlackTree.sol";
 contract TestRedBlackTree {
   using RedBlackTree for Tree;
 
-  Tree internal tree;
-
-  event Log(string where, uint256 key, uint256 value);
+  Tree private tree;
 
   function root() public view returns (uint256 _key) {
     _key = tree.root;
@@ -37,11 +35,9 @@ contract TestRedBlackTree {
 
   function insert(uint256 _key) public {
     tree.insert(_key);
-    emit Log("insert", _key, 0);
   }
 
   function remove(uint256 _key) public {
     tree.remove(_key);
-    emit Log("remove", _key, 0);
   }
 }

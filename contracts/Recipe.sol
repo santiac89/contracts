@@ -3,16 +3,16 @@
 pragma solidity ^0.8.0;
 
 import "./ds/RedBlackTree.sol";
-import "./ds/FastArray.sol";
+import "./ds/EnumerableSet.sol";
 import "./security/SafeEntry.sol";
 import "./utils/TransferWithCommission.sol";
 import "./WhirlpoolConsumer.sol";
 
 struct Round {
   Tree sortedBids;
-  mapping(uint256 => AddressList) bidToBidders;
+  mapping(uint256 => AddressSet) bidToBidders;
   mapping(address => uint256) biddersToBids;
-  AddressList bidders;
+  AddressSet bidders;
   uint256 pendingReward;
   address winner;
   uint256 total;
@@ -21,7 +21,7 @@ struct Round {
 
 contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   using RedBlackTree for Tree;
-  using FastArray for AddressList;
+  using EnumerableSet for AddressSet;
 
   Round[] internal rounds;
   uint256 public currentRound;
@@ -82,12 +82,7 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
 
   function highestBid(uint256 id) public view returns (address bidder, uint256 bid) {
     bid = rounds[id].sortedBids.last();
-    bidder = rounds[id].bidToBidders[bid].last();
-  }
-
-  function lastBid(uint256 id) public view returns (address bidder, uint256 bid) {
-    bidder = rounds[id].bidders.last();
-    bid = rounds[id].biddersToBids[bidder];
+    bidder = rounds[id].bidToBidders[bid].get(0);
   }
 
   function eliminate(
@@ -101,10 +96,9 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
     uint256 bid = round.biddersToBids[bidder];
 
     (address highestBidder, uint256 _highestBid) = highestBid(id);
-    (address lastBidder, ) = lastBid(id);
-    if (highestBidder == bidder && _highestBid == bid) {
+    if (highestBidder == bidder && _highestBid == bid && highestBidderWins) {
       round.pendingReward = round.total;
-      round.winner = highestBidderWins ? highestBidder : lastBidder;
+      round.winner = highestBidder;
       currentRound++;
       return;
     }
@@ -121,7 +115,7 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
 
     round.bidToBidders[bid].remove(bidder);
     if (round.bidToBidders[bid].size() == 0) round.sortedBids.remove(bid);
-    round.bidders.remove(index);
+    round.bidders.removeAt(index);
     delete round.biddersToBids[bidder];
   }
 
