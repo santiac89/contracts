@@ -48,7 +48,7 @@ library RedBlackTree {
   }
 
   function next(Tree storage self, uint256 target) internal view returns (uint256 cursor) {
-    if (target == EMPTY) return 0;
+    if (target == EMPTY) return EMPTY;
     if (self.nodes[target].right != EMPTY) {
       cursor = treeMinimum(self, self.nodes[target].right);
     } else {
@@ -61,7 +61,7 @@ library RedBlackTree {
   }
 
   function prev(Tree storage self, uint256 target) internal view returns (uint256 cursor) {
-    if (target == EMPTY) return 0;
+    if (target == EMPTY) return EMPTY;
     if (self.nodes[target].left != EMPTY) {
       cursor = treeMaximum(self, self.nodes[target].left);
     } else {

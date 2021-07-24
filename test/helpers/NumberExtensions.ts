@@ -91,6 +91,8 @@ declare global {
     get day(): number
     get hours(): number
     get hour(): number
+    get minutes(): number
+    get minute(): number
 
     get ms(): number
 

@@ -23,15 +23,12 @@ abstract contract TransferWithCommission is Ownable {
   ) external onlyOwner {
     require(
       _commissionRate <= MAX_COMMISSION_RATE && _referralRate <= _commissionRate && _cancellationFee <= _commissionRate,
-      "Value exceeds max amount"
+      "Transfer: Value exceeds maximum"
     );
 
     commissionRate = _commissionRate;
     referralRate = _referralRate;
-  }
-
-  function sendWithoutFee(address to, uint256 amount) internal {
-    Address.sendValue(payable(to), amount);
+    cancellationFee = _cancellationFee;
   }
 
   function refund(address to, uint256 amount) internal {

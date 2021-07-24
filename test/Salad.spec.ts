@@ -3,10 +3,10 @@ import { expect } from 'chai'
 import { Contract } from '@ethersproject/contracts'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, constants, ContractFactory, ContractTransaction } from 'ethers'
-import IWhirlpool from '../artifacts/contracts/interfaces/IWhirlpool.sol/IWhirlpool.json'
+import IWhirlpool from '../artifacts/contracts/utils/interfaces/IWhirlpool.sol/IWhirlpool.json'
 import { MockContract } from 'ethereum-waffle'
-import './utils/NumberExtensions'
-import { fastForward, snapshot } from './utils/Common'
+import './helpers/NumberExtensions'
+import { fastForward, snapshot } from './helpers/Common'
 
 describe('Salad', () => {
   let salad: Contract
@@ -70,7 +70,7 @@ describe('Salad', () => {
       .reduce((a, b) => a.add(b))
 
   async function placeAllBets() {
-    await salad.connect(owner).setMinBet((0.001).eth)
+    await salad.connect(owner).setMinValue((0.001).eth)
 
     for (const { value, bet, bet2, player, referrer } of allBets()) {
       await salad.connect(player).addIngredient(0, bet, bet2, referrer.address, { value })
@@ -103,8 +103,8 @@ describe('Salad', () => {
 
   describe('addIngredient', () => {
     it('throws error if not betting on the current salad', async () => {
-      await expect(salad.addIngredient(1, 1, 3, referrers[0].address, { value: (0.001).eth })).to.be.revertedWith(
-        'Can only bet in current salad'
+      await expect(salad.addIngredient(1, 1, 3, referrers[0].address, { value: (0.1).eth })).to.be.revertedWith(
+        'Not current salad'
       )
     })
 
@@ -121,9 +121,9 @@ describe('Salad', () => {
     it('throws error if bet is for anything other than 0-5', async () => {
       const msg = 'Can only bet 0-5'
 
-      await expect(salad.addIngredient(0, 1, 7, referrers[0].address)).to.be.revertedWith(msg)
-      await expect(salad.addIngredient(0, 7, 1, referrers[0].address)).to.be.revertedWith(msg)
-      await expect(salad.addIngredient(0, 7, 7, referrers[0].address)).to.be.revertedWith(msg)
+      await expect(salad.addIngredient(0, 1, 7, referrers[0].address, { value: (0.1).eth })).to.be.revertedWith(msg)
+      await expect(salad.addIngredient(0, 7, 1, referrers[0].address, { value: (0.1).eth })).to.be.revertedWith(msg)
+      await expect(salad.addIngredient(0, 7, 7, referrers[0].address, { value: (0.1).eth })).to.be.revertedWith(msg)
     })
 
     it('throws error if a bet is already placed by the player', async () => {
@@ -144,7 +144,7 @@ describe('Salad', () => {
 
     it('throws error if bet amount is less than min bet', async () => {
       await expect(salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.001).eth })).to.be.revertedWith(
-        'Value is less than minimum'
+        'Less than minimum'
       )
     })
 
@@ -219,7 +219,7 @@ describe('Salad', () => {
     })
 
     it('throws error if bet amount is 0', async () => {
-      await expect(salad.increaseIngredient(0, 5)).to.be.revertedWith('Value must be greater than 0')
+      await expect(salad.increaseIngredient(0, 5)).to.be.revertedWith('Value must be more than 0')
     })
 
     it('throws error if no bet was placed by the player', async () => {
@@ -478,6 +478,41 @@ describe('Salad', () => {
 
         await expect(salad.connect(player).claim(0)).to.be.revertedWith('Nothing to claim')
       })
+    })
+  })
+
+  describe('setExpiry', () => {
+    const error = 'Time is not up yet!'
+
+    it('throws error if expiry is out of bounds', async () => {
+      await expect(salad.connect(owner).setExpiry((30).minutes)).to.be.revertedWith('Value is out of bounds')
+      await expect(salad.connect(owner).setExpiry((5).days)).to.be.revertedWith('Value is out of bounds')
+    })
+
+    it('sets expiry of the new salads', async () => {
+      await salad.connect(owner).setExpiry((1).hour)
+      await salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })
+
+      await expect(salad.prepareSalad(0)).to.be.revertedWith(error)
+
+      await fastForward((1).hour)
+
+      await expect(salad.prepareSalad(0)).not.to.be.revertedWith(error)
+    })
+
+    it('does not affect expiry of existing salads', async () => {
+      await salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth })
+      await salad.connect(owner).setExpiry((1).hour)
+
+      await expect(salad.prepareSalad(0)).to.be.revertedWith(error)
+
+      await fastForward((1).hour)
+
+      await expect(salad.prepareSalad(0)).to.be.revertedWith(error)
+
+      await fastForward((23).hours)
+
+      await expect(salad.prepareSalad(0)).not.to.be.revertedWith(error)
     })
   })
 })

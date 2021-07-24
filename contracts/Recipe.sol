@@ -6,7 +6,8 @@ import "./ds/RedBlackTree.sol";
 import "./ds/EnumerableSet.sol";
 import "./security/SafeEntry.sol";
 import "./utils/TransferWithCommission.sol";
-import "./WhirlpoolConsumer.sol";
+import "./utils/ValueLimits.sol";
+import "./utils/WhirlpoolConsumer.sol";
 
 struct Round {
   Tree sortedBids;
@@ -19,20 +20,25 @@ struct Round {
   bool hasEnded;
 }
 
-contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
+contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEntry {
   using RedBlackTree for Tree;
   using EnumerableSet for AddressSet;
 
   Round[] internal rounds;
   uint256 public currentRound;
 
-  // solhint-disable no-empty-blocks
-  constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) {}
+  uint16 public constant MAX_HIGHEST_BIDDER_WIN_ODDS = 10000;
+  uint16 public highestBidderWinOdds = 2500;
 
-  function createBid(uint256 id, address referrer) external payable notContract nonReentrant {
-    require(currentRound == id, "Can only bet in current round");
-    require(rounds[id].winner == address(0), "Round has ended");
-    require(msg.value > 0, "Value can't be 0");
+  uint256 public minBidsPerRound = 5;
+  uint256 public minAmountPerRound = 1 ether;
+
+  // solhint-disable no-empty-blocks
+  constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) ValueLimits(0.001 ether, 100 ether) {}
+
+  function createBid(uint256 id, address referrer) external payable notContract nonReentrant isMinValue {
+    require(currentRound == id, "Recipe: Not current round");
+    require(rounds[id].winner == address(0), "Recipe: Round has ended");
 
     Round storage round = rounds[id];
 
@@ -58,7 +64,7 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
     Round storage round = rounds[id];
 
     if (msg.sender == round.winner) {
-      require(round.pendingReward != 0, "Nothing to claim");
+      require(round.pendingReward != 0, "Recipe: Nothing to claim");
 
       send(round.winner, round.pendingReward);
       round.pendingReward = 0;
@@ -66,7 +72,7 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
     }
 
     uint256 myBid = round.biddersToBids[msg.sender];
-    require(myBid != 0, "Nothing to claim");
+    require(myBid != 0, "Recipe: Nothing to claim");
 
     uint256 myReward = (round.pendingReward * round.total) / myBid;
     round.pendingReward -= myReward;
@@ -76,8 +82,23 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
     send(msg.sender, myBid + myReward);
   }
 
-  function next() external {
+  function pickOrEliminate() external {
+    Round storage round = rounds[currentRound];
+
+    require(round.total >= minAmountPerRound, "Recipe: Min amount not reached");
+    require(round.bidders.size() >= minBidsPerRound, "Recipe: Min bids not reached");
+
     _requestRandomness(currentRound);
+  }
+
+  function setHighestBidderWinOdds(uint16 val) external onlyOwner {
+    require(val <= MAX_HIGHEST_BIDDER_WIN_ODDS, "Recipe: Value exceeds max amount");
+    highestBidderWinOdds = val;
+  }
+
+  function setMinForElimination(uint256 minBids, uint256 minAmount) external onlyOwner {
+    minBidsPerRound = minBids;
+    minAmountPerRound = minAmount;
   }
 
   function highestBid(uint256 id) public view returns (address bidder, uint256 bid) {
@@ -120,6 +141,10 @@ contract Recipe is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   }
 
   function _consumeRandomness(uint256 id, uint256 randomness) internal override {
-    eliminate(id, (randomness % rounds[id].bidders.size()), randomness % 2 == 0);
+    eliminate(
+      id,
+      (randomness % rounds[id].bidders.size()),
+      randomness % MAX_HIGHEST_BIDDER_WIN_ODDS <= highestBidderWinOdds
+    );
   }
 }

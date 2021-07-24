@@ -2,8 +2,8 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { constants, Contract } from 'ethers'
-import './utils/NumberExtensions'
-import { hashEndingWith } from './utils/Common'
+import './helpers/NumberExtensions'
+import { hashEndingWith } from './helpers/Common'
 
 describe('Donut', () => {
   let donut: Contract
@@ -24,15 +24,11 @@ describe('Donut', () => {
 
   describe('placeBet', () => {
     it('throws error if bet amount is less than min', async () => {
-      await expect(donut.placeBet(3, referrer.address, { value: (0.0001).eth })).to.be.revertedWith(
-        'Bet is less than minimum'
-      )
+      await expect(donut.placeBet(3, referrer.address, { value: (0.0001).eth })).to.be.revertedWith('Less than minimum')
     })
 
     it('throws error if bet amount is more than max', async () => {
-      await expect(donut.placeBet(3, referrer.address, { value: (1).eth })).to.be.revertedWith(
-        'Bet is more than maximum'
-      )
+      await expect(donut.placeBet(3, referrer.address, { value: (1).eth })).to.be.revertedWith('More than maximum')
     })
 
     it('adds the bet to list of bets', async () => {

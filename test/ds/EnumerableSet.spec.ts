@@ -1,8 +1,8 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { Contract } from 'ethers'
-import '../utils/NumberExtensions'
-import { randomAddress, randomAddresses } from '../utils/Random'
+import '../helpers/NumberExtensions'
+import { randomAddress, randomAddresses } from '../helpers/Random'
 
 describe('EnumerableSet', () => {
   let set: Contract
@@ -110,26 +110,31 @@ describe('EnumerableSet', () => {
       }
 
       // removal of random items; order is not guaranteed, so we sort
+      expect(await set.has(arr[3])).to.eq(true)
       await set.remove(arr[3]) // 4 left
       arr.splice(3, 1)
 
       expect((await enumerate()).sort()).to.eql(arr.sort())
 
+      expect(await set.has(arr[1])).to.eq(true)
       await set.remove(arr[1]) // 3 left
       arr.splice(1, 1)
 
       expect((await enumerate()).sort()).to.eql(arr.sort())
 
+      expect(await set.has(arr[2])).to.eq(true)
       await set.remove(arr[2]) // 2 left
       arr.splice(2, 1)
 
       expect((await enumerate()).sort()).to.eql(arr.sort())
 
+      expect(await set.has(arr[0])).to.eq(true)
       await set.remove(arr[0]) // 1 left
       arr.splice(0, 1)
 
       expect((await enumerate()).sort()).to.eql(arr.sort())
 
+      expect(await set.has(arr[0])).to.eq(true)
       await set.remove(arr[0]) // 0 left
       arr.splice(0, 1)
 
@@ -153,9 +158,5 @@ describe('EnumerableSet', () => {
 
       expect((await enumerate()).sort()).to.eql(arr.slice(0, -1).sort())
     })
-  })
-
-  describe('last', () => {
-    it('does not guarantee order but always guarantees last element')
   })
 })

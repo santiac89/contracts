@@ -2,9 +2,9 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, Contract } from 'ethers'
-import '../utils/NumberExtensions'
-import { sorted } from '../utils/Common'
-import { random } from '../utils/Random'
+import '../helpers/NumberExtensions'
+import { sorted } from '../helpers/Common'
+import { random } from '../helpers/Random'
 
 describe('RedBlackTree', () => {
   let rbt: Contract

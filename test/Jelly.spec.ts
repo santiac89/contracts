@@ -1,7 +1,7 @@
 import { ethers, waffle } from 'hardhat'
 import { expect } from 'chai'
-import IWhirlpool from '../artifacts/contracts/interfaces/IWhirlpool.sol/IWhirlpool.json'
-import './utils/NumberExtensions'
+import IWhirlpool from '../artifacts/contracts/utils/interfaces/IWhirlpool.sol/IWhirlpool.json'
+import './helpers/NumberExtensions'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { MockContract } from 'ethereum-waffle'
 import { constants, Contract, ContractTransaction } from 'ethers'
@@ -60,12 +60,12 @@ describe('Jelly', () => {
       })
     })
 
-    it('throws an error if.eth passed are less than minimum bet', async () => {
+    it('throws an error if eth passed are less than minimum bet', async () => {
       await expect(
         jelly.createBet(1, creatorReferrer.address, {
           value: (0.001).eth
         })
-      ).to.be.revertedWith('Bet amount is less than minimum')
+      ).to.be.revertedWith('Less than minimum')
     })
 
     it('throws an error if bet is on anything other than 0 or 1', async () => {
@@ -97,7 +97,7 @@ describe('Jelly', () => {
     })
 
     it('throws error if anyone else other than the creator tries to cancel the bet', async () => {
-      await expect(jelly.connect(joiner).cancelBet(0)).to.be.revertedWith("You didn't create this bet")
+      await expect(jelly.connect(joiner).cancelBet(0)).to.be.revertedWith('Not your bet')
     })
 
     it('refunds the bet amount less cancellation fees', async () => {
@@ -147,6 +147,14 @@ describe('Jelly', () => {
 
     it('throws error if bet is unavailable', async () => {
       await expect(jelly.acceptBet(1, joinerReferrer.address)).to.be.revertedWith('Bet is unavailable')
+    })
+
+    it('throws error if bet is already accepted', async () => {
+      await jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.01).eth })
+
+      await expect(
+        jelly.connect(joiner).acceptBet(0, joinerReferrer.address, { value: (0.01).eth })
+      ).to.be.revertedWith('Bet is already accepted')
     })
 
     describe('on bet concluded', () => {

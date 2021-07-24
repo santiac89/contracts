@@ -46,7 +46,7 @@ abstract contract WhirlpoolConsumer is Ownable, IWhirlpoolConsumer {
   function _consumeRandomness(uint256 id, uint256 randomness) internal virtual;
 
   modifier onlyWhirlpoolOrOwner() {
-    require(msg.sender == address(whirlpool) || msg.sender == owner(), "Not owner/whirlpool");
+    require(msg.sender == address(whirlpool) || msg.sender == owner(), "WhirlpoolConsumer: Not whirlpool");
     _;
   }
 }

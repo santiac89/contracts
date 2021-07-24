@@ -59,12 +59,12 @@ contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
     require(LINK.transfer(msg.sender, LINK.balanceOf(address(this))), "Whirlpool: Unable to transfer");
   }
 
-  modifier hasEnoughLINK {
+  modifier hasEnoughLINK() {
     require(LINK.balanceOf(address(this)) >= fee, "Whirlpool: Not enough LINK");
     _;
   }
 
-  modifier validConsumer {
+  modifier validConsumer() {
     require(validConsumers[msg.sender], "Whirlpool: Not a valid consumer");
     _;
   }

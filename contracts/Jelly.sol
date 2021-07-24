@@ -2,9 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import "./WhirlpoolConsumer.sol";
 import "./security/SafeEntry.sol";
+import "./utils/ValueLimits.sol";
 import "./utils/TransferWithCommission.sol";
+import "./utils/WhirlpoolConsumer.sol";
 
 enum JellyType {
   Strawberry,
@@ -18,13 +19,12 @@ struct JellyBet {
   uint256 value;
 }
 
-contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
+contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEntry {
   using Address for address;
 
   mapping(uint256 => JellyBet) public bets;
 
   uint256 public numBets = 0;
-  uint256 public minBet = 0.01 ether;
 
   event BetCreated(uint256 id, address creator, JellyType bet, uint256 value);
   event BetCancelled(uint256 id);
@@ -32,11 +32,9 @@ contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   event BetConcluded(uint256 id, address referrer, JellyType result);
 
   // solhint-disable no-empty-blocks
-  constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) {}
+  constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) ValueLimits(0.01 ether, 100 ether) {}
 
-  function createBet(JellyType bet, address referrer) external payable nonReentrant notContract {
-    require(msg.value >= minBet, "Bet amount is less than minimum");
-
+  function createBet(JellyType bet, address referrer) external payable nonReentrant notContract isMinValue {
     uint256 id = numBets;
 
     bets[id].creator = msg.sender;
@@ -51,7 +49,7 @@ contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   }
 
   function cancelBet(uint256 id) external nonReentrant notContract {
-    require(bets[id].creator == msg.sender, "You didn't create this bet");
+    require(bets[id].creator == msg.sender, "Jelly: Not your bet");
 
     refund(msg.sender, bets[id].value);
 
@@ -60,9 +58,9 @@ contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
   }
 
   function acceptBet(uint256 id, address referrer) external payable nonReentrant notContract {
-    require(bets[id].value != 0, "Bet is unavailable");
-    require(bets[id].joiner == address(0), "Bet is already accepted");
-    require(msg.value == bets[id].value, "Unfair bet");
+    require(bets[id].value != 0, "Jelly: Bet is unavailable");
+    require(bets[id].joiner == address(0), "Jelly: Bet is already accepted");
+    require(msg.value == bets[id].value, "Jelly: Unfair bet");
 
     bets[id].joiner = msg.sender;
     referrers[msg.sender] = referrer;
@@ -70,10 +68,6 @@ contract Jelly is TransferWithCommission, WhirlpoolConsumer, SafeEntry {
     emit BetAccepted(id, bets[id].joiner);
 
     _requestRandomness(id);
-  }
-
-  function setMinBet(uint256 val) external onlyOwner {
-    minBet = val;
   }
 
   function concludeBet(uint256 id, JellyType result) internal {

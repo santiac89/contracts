@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "./security/SafeEntry.sol";
+import "./utils/ValueLimits.sol";
 import "./utils/TransferWithCommission.sol";
 
 struct DonutBet {
@@ -12,7 +13,7 @@ struct DonutBet {
   uint256 block;
 }
 
-contract Donut is TransferWithCommission, SafeEntry {
+contract Donut is TransferWithCommission, ValueLimits, SafeEntry {
   uint8 public constant MIN_MULTIPLIER = 10;
   uint8 public constant MAX_MULTIPLIER = 20;
   uint8 public multiplier = 15;
@@ -20,15 +21,15 @@ contract Donut is TransferWithCommission, SafeEntry {
   uint256 public constant MAX_EXPIRY = 4 days;
   uint256 public constant MIN_EXPIRY = 5 minutes;
 
-  uint256 public minBet = 0.001 ether;
-  uint256 public maxBet = 0.1 ether;
-
   mapping(uint64 => DonutBet) public bets;
 
   uint64 public numBets = 0;
 
   event BetPlaced(uint64 id, uint8 bet, address creator, uint256 value);
   event BetClaimed(uint64 id, address referrer);
+
+  // solhint-disable no-empty-blocks
+  constructor() ValueLimits(0.001 ether, 0.1 ether) {}
 
   function hasWon(uint64 id) public view returns (bool) {
     if (bets[id].value == 0) return false;
@@ -40,10 +41,7 @@ contract Donut is TransferWithCommission, SafeEntry {
     return uint8(hash[31]) % 16 == bets[id].bet;
   }
 
-  function placeBet(uint8 bet, address referrer) external payable nonReentrant notContract {
-    require(msg.value >= minBet, "Bet is less than minimum");
-    require(msg.value <= maxBet, "Bet is more than maximum");
-
+  function placeBet(uint8 bet, address referrer) external payable nonReentrant notContract isMinValue isMaxValue {
     uint64 id = numBets;
 
     bets[id].bet = bet;
@@ -59,8 +57,8 @@ contract Donut is TransferWithCommission, SafeEntry {
   }
 
   function claim(uint64 id) external nonReentrant notContract {
-    require(bets[id].creator == msg.sender, "Nothing to claim");
-    require(hasWon(id), "You didn't win");
+    require(bets[id].creator == msg.sender, "Donut: Nothing to claim");
+    require(hasWon(id), "Donut: You didn't win");
 
     send(payable(msg.sender), bets[id].value * multiplier);
 
@@ -69,17 +67,9 @@ contract Donut is TransferWithCommission, SafeEntry {
     delete bets[id];
   }
 
-  function setMinBet(uint256 val) external onlyOwner {
-    minBet = val;
-  }
-
-  function setMaxBet(uint256 val) external onlyOwner {
-    maxBet = val;
-  }
-
   function setMultiplier(uint8 val) external onlyOwner {
-    require(val <= MAX_MULTIPLIER, "Value exceeds max amount");
-    require(val >= MIN_MULTIPLIER, "Value is below min amount");
+    require(val <= MAX_MULTIPLIER, "Donut: Value exceeds max amount");
+    require(val >= MIN_MULTIPLIER, "Donut: Value is below min amount");
 
     multiplier = val;
   }
