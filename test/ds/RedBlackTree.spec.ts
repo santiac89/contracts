@@ -1,13 +1,14 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumber, Contract } from 'ethers'
+import { BigNumber } from 'ethers'
 import '../helpers/NumberExtensions'
 import { sorted } from '../helpers/Common'
 import { random } from '../helpers/Random'
+import { TestRedBlackTree as RedBlackTree } from '../../types/TestRedBlackTree'
 
 describe('RedBlackTree', () => {
-  let rbt: Contract
+  let rbt: RedBlackTree
   let owner: SignerWithAddress
 
   async function enumerate() {
@@ -29,7 +30,7 @@ describe('RedBlackTree', () => {
   beforeEach(async () => {
     ;[owner] = await ethers.getSigners()
     const rbtFactory = await ethers.getContractFactory('TestRedBlackTree')
-    rbt = await rbtFactory.deploy()
+    rbt = (await rbtFactory.deploy()) as RedBlackTree
     await rbt.deployed()
   })
 
@@ -80,20 +81,20 @@ describe('RedBlackTree', () => {
       }
 
       for (let i = 0; i < 50; i++) {
-        await rbt.remove(items.shift())
+        await rbt.remove(items.shift()!)
       }
 
       expect(await enumerate()).to.eql(sorted(items))
       expect(await enumerateReverse()).to.eql(sorted(items).reverse())
 
       for (let i = 0; i < 49; i++) {
-        await rbt.remove(items.shift())
+        await rbt.remove(items.shift()!)
       }
 
       expect(await enumerate()).to.eql(sorted(items))
       expect(await enumerateReverse()).to.eql(sorted(items).reverse())
 
-      await rbt.remove(items.shift())
+      await rbt.remove(items.shift()!)
 
       expect(await enumerate()).to.eql([])
       expect(await enumerateReverse()).to.eql([])

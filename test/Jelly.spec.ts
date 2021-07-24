@@ -4,10 +4,11 @@ import IWhirlpool from '../artifacts/contracts/utils/interfaces/IWhirlpool.sol/I
 import './helpers/NumberExtensions'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { MockContract } from 'ethereum-waffle'
-import { constants, Contract, ContractTransaction } from 'ethers'
+import { constants, ContractTransaction } from 'ethers'
+import { Jelly } from '../types/Jelly'
 
 describe('Jelly', () => {
-  let jelly: Contract
+  let jelly: Jelly
   let owner: SignerWithAddress
   let creator: SignerWithAddress
   let creatorReferrer: SignerWithAddress
@@ -23,7 +24,7 @@ describe('Jelly', () => {
     await mockIWhirlpool.mock.request.returns(constants.HashZero)
 
     const jellyFactory = await ethers.getContractFactory('Jelly')
-    jelly = await jellyFactory.deploy(mockIWhirlpool.address)
+    jelly = (await jellyFactory.deploy(mockIWhirlpool.address)) as Jelly
     await jelly.enableWhirlpool()
 
     jelly = jelly.connect(creator)

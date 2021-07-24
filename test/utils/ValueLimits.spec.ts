@@ -1,11 +1,11 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { Contract } from 'ethers'
 import '../helpers/NumberExtensions'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { TestValueLimits as ValueLimits } from '../../types/TestValueLimits'
 
 describe('ValueLimits', () => {
-  let valueLimits: Contract
+  let valueLimits: ValueLimits
   let owner: SignerWithAddress
   let other: SignerWithAddress
 
@@ -13,7 +13,7 @@ describe('ValueLimits', () => {
     ;[owner, other] = await ethers.getSigners()
 
     const valueLimitsFactory = await ethers.getContractFactory('TestValueLimits')
-    valueLimits = await valueLimitsFactory.deploy()
+    valueLimits = (await valueLimitsFactory.deploy()) as ValueLimits
     await valueLimits.deployed()
 
     await valueLimits.deposit({ value: (1).eth })

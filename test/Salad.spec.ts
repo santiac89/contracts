@@ -1,15 +1,15 @@
 import { ethers, waffle } from 'hardhat'
 import { expect } from 'chai'
-import { Contract } from '@ethersproject/contracts'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumber, constants, ContractFactory, ContractTransaction } from 'ethers'
+import { BigNumber, constants, ContractTransaction } from 'ethers'
 import IWhirlpool from '../artifacts/contracts/utils/interfaces/IWhirlpool.sol/IWhirlpool.json'
 import { MockContract } from 'ethereum-waffle'
 import './helpers/NumberExtensions'
 import { fastForward, snapshot } from './helpers/Common'
+import { Salad } from '../types/Salad'
 
 describe('Salad', () => {
-  let salad: Contract
+  let salad: Salad
   let owner: SignerWithAddress
   let players: SignerWithAddress[]
   let referrers: SignerWithAddress[]
@@ -95,7 +95,7 @@ describe('Salad', () => {
     await mockIWhirlpool.mock.request.returns(constants.HashZero)
 
     const saladFactory = await ethers.getContractFactory('Salad')
-    salad = await saladFactory.deploy(mockIWhirlpool.address)
+    salad = (await saladFactory.deploy(mockIWhirlpool.address)) as Salad
     await salad.enableWhirlpool()
 
     salad = salad.connect(players[0])

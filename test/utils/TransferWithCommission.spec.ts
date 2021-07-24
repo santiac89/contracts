@@ -1,11 +1,11 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { Contract } from 'ethers'
 import '../helpers/NumberExtensions'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { TestTransferWithCommission as TransferWithCommission } from '../../types/TestTransferWithCommission'
 
 describe('TransferWithCommission', () => {
-  let transferUtil: Contract
+  let transferUtil: TransferWithCommission
   let owner: SignerWithAddress
   let player: SignerWithAddress
   let referrer: SignerWithAddress
@@ -14,7 +14,7 @@ describe('TransferWithCommission', () => {
     ;[owner, player, referrer] = await ethers.getSigners()
 
     const transferUtilFactory = await ethers.getContractFactory('TestTransferWithCommission')
-    transferUtil = await transferUtilFactory.deploy()
+    transferUtil = (await transferUtilFactory.deploy()) as TransferWithCommission
     await transferUtil.deployed()
 
     await transferUtil.deposit({ value: (100).eth })

@@ -14,6 +14,7 @@ enum SaladStatus {
   Served
 }
 
+
 struct SaladBet {
   uint8 bet;
   uint8 bet2;

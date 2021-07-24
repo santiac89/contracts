@@ -1,12 +1,13 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { constants, Contract } from 'ethers'
+import { constants } from 'ethers'
+import { MockDonut as Donut } from '../types/MockDonut'
 import './helpers/NumberExtensions'
 import { hashEndingWith } from './helpers/Common'
 
 describe('Donut', () => {
-  let donut: Contract
+  let donut: Donut
   let owner: SignerWithAddress
   let creator: SignerWithAddress
   let referrer: SignerWithAddress
@@ -14,7 +15,7 @@ describe('Donut', () => {
   beforeEach(async () => {
     ;[owner, creator, referrer] = await ethers.getSigners()
     const donutFactory = await ethers.getContractFactory('MockDonut')
-    donut = await donutFactory.deploy()
+    donut = (await donutFactory.deploy()) as Donut
     await donut.deployed()
 
     await donut.deposit({ value: (100).eth })

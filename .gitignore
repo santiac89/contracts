@@ -11,4 +11,7 @@ artifacts
 
 # Coverage
 coverage.json
-coverage
+coverage/
+
+# Typechain
+types/

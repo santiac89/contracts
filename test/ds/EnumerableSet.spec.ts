@@ -1,16 +1,16 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { Contract } from 'ethers'
 import '../helpers/NumberExtensions'
 import { randomAddress, randomAddresses } from '../helpers/Random'
+import { TestEnumerableSet as EnumerableSet } from '../../types/TestEnumerableSet'
 
 describe('EnumerableSet', () => {
-  let set: Contract
+  let set: EnumerableSet
 
   async function enumerate() {
     const size = await set.size()
     const arr: string[] = []
-    for (let i = 0; i < size; i++) {
+    for (let i = 0; i < size.toNumber(); i++) {
       arr.push(await set.get(i))
     }
     return arr
@@ -18,7 +18,7 @@ describe('EnumerableSet', () => {
 
   beforeEach(async () => {
     const setFactory = await ethers.getContractFactory('TestEnumerableSet')
-    set = await setFactory.deploy()
+    set = (await setFactory.deploy()) as EnumerableSet
     await set.deployed()
   })
 

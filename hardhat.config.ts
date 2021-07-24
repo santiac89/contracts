@@ -1,6 +1,8 @@
 import { task } from 'hardhat/config'
+import '@typechain/hardhat'
+import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
-import '@nomiclabs/hardhat-etherscan'
+import '@nomiclabs/hardhat-solhint'
 import 'solidity-coverage'
 import fs from 'fs'
 
@@ -72,5 +74,9 @@ export default {
   },
   etherscan: {
     apiKey: bscscanKey
+  },
+  typechain: {
+    outDir: 'types',
+    target: 'ethers-v5'
   }
 }
