@@ -10,6 +10,7 @@ cache:
     - node_modules/
     - coverage/
     - artifacts/
+    - types/
 
 compile:
   stage: build
