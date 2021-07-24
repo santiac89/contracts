@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import "./security/SafeEntry.sol";
-import "./utils/ValueLimits.sol";
-import "./utils/TransferWithCommission.sol";
-import "./utils/WhirlpoolConsumer.sol";
+import "../security/SafeEntry.sol";
+import "../utils/ValueLimits.sol";
+import "../utils/TransferWithCommission.sol";
+import "../utils/WhirlpoolConsumer.sol";
 
 enum JellyType {
   Strawberry,

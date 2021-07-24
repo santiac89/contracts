@@ -2,9 +2,9 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { constants } from 'ethers'
-import { MockDonut as Donut } from '../types/MockDonut'
-import './helpers/NumberExtensions'
-import { hashEndingWith } from './helpers/Common'
+import { MockDonut as Donut } from '../../types/MockDonut'
+import '../helpers/NumberExtensions'
+import { hashEndingWith } from '../helpers/Common'
 
 describe('Donut', () => {
   let donut: Donut

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../utils/ValueLimits.sol";
+import "../ValueLimits.sol";
 
 contract TestValueLimits is ValueLimits {
   // solhint-disable no-empty-blocks

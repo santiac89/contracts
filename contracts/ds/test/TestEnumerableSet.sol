@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../ds/EnumerableSet.sol";
+import "../EnumerableSet.sol";
 
 contract TestEnumerableSet {
   using EnumerableSet for AddressSet;

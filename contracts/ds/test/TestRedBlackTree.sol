@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../ds/RedBlackTree.sol";
+import "../RedBlackTree.sol";
 
 contract TestRedBlackTree {
   using RedBlackTree for Tree;

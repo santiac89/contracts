@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../utils/TransferWithCommission.sol";
+import "../TransferWithCommission.sol";
 
 contract TestTransferWithCommission is TransferWithCommission {
   function setReferrer(address origin, address referrer) external onlyOwner {

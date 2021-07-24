@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import "./ds/RedBlackTree.sol";
-import "./ds/EnumerableSet.sol";
-import "./security/SafeEntry.sol";
-import "./utils/TransferWithCommission.sol";
-import "./utils/ValueLimits.sol";
-import "./utils/WhirlpoolConsumer.sol";
+import "../ds/RedBlackTree.sol";
+import "../ds/EnumerableSet.sol";
+import "../security/SafeEntry.sol";
+import "../utils/TransferWithCommission.sol";
+import "../utils/ValueLimits.sol";
+import "../utils/WhirlpoolConsumer.sol";
 
 struct Round {
   Tree sortedBids;

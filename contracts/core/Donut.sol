@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "./security/SafeEntry.sol";
-import "./utils/ValueLimits.sol";
-import "./utils/TransferWithCommission.sol";
+import "../security/SafeEntry.sol";
+import "../utils/ValueLimits.sol";
+import "../utils/TransferWithCommission.sol";
 
 struct DonutBet {
   uint8 bet;

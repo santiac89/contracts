@@ -2,11 +2,11 @@ import { ethers, waffle } from 'hardhat'
 import { expect } from 'chai'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, constants, ContractTransaction } from 'ethers'
-import IWhirlpool from '../artifacts/contracts/utils/interfaces/IWhirlpool.sol/IWhirlpool.json'
+import IWhirlpool from '../../artifacts/contracts/utils/interfaces/IWhirlpool.sol/IWhirlpool.json'
 import { MockContract } from 'ethereum-waffle'
-import './helpers/NumberExtensions'
-import { fastForward, snapshot } from './helpers/Common'
-import { Salad } from '../types/Salad'
+import '../helpers/NumberExtensions'
+import { fastForward, snapshot } from '../helpers/Common'
+import { Salad } from '../../types/Salad'
 
 describe('Salad', () => {
   let salad: Salad

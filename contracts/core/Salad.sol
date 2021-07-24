@@ -3,17 +3,16 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./security/SafeEntry.sol";
-import "./utils/ValueLimits.sol";
-import "./utils/TransferWithCommission.sol";
-import "./utils/WhirlpoolConsumer.sol";
+import "../security/SafeEntry.sol";
+import "../utils/ValueLimits.sol";
+import "../utils/TransferWithCommission.sol";
+import "../utils/WhirlpoolConsumer.sol";
 
 enum SaladStatus {
   BowlCreated,
   Prepared,
   Served
 }
-
 
 struct SaladBet {
   uint8 bet;
