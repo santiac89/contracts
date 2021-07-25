@@ -25,37 +25,17 @@ describe('Salad', () => {
       referrer: referrers[i++]
     })
 
+    // prettier-ignore
     return [
-      bet(0.653, 0, 5),
-      bet(0.133, 1, 3),
-      bet(0.31, 4, 5),
-      bet(0.682, 2, 3),
-      bet(0.019, 5, 1),
-      bet(0.322, 2, 3),
-      bet(0.201, 1, 2),
-      bet(0.16, 5, 3),
-      bet(0.594, 2, 3),
-      bet(0.004, 4, 0),
-      bet(0.581, 0, 3),
-      bet(0.694, 5, 5),
-      bet(0.253, 1, 3),
-      bet(0.216, 0, 5),
-      bet(0.323, 0, 3),
-      bet(0.978, 5, 2),
-      bet(0.557, 0, 0),
-      bet(0.605, 2, 0),
-      bet(0.223, 0, 0),
-      bet(0.058, 0, 2),
-      bet(0.069, 2, 3),
-      bet(0.285, 5, 1),
-      bet(0.407, 0, 4),
-      bet(0.126, 4, 1),
-      bet(0.386, 3, 2)
+      bet(0.653, 0, 5), bet(0.133, 1, 3), bet(0.311, 4, 5), bet(0.682, 2, 3), bet(0.019, 5, 1),
+      bet(0.322, 2, 3), bet(0.201, 1, 2), bet(0.161, 5, 3), bet(0.594, 2, 3), bet(0.004, 4, 0),
+      bet(0.581, 0, 3), bet(0.694, 5, 5), bet(0.253, 1, 3), bet(0.216, 0, 5), bet(0.323, 0, 3),
+      bet(0.978, 5, 2), bet(0.557, 0, 0), bet(0.605, 2, 0), bet(0.223, 0, 0), bet(0.058, 0, 2),
+      bet(0.069, 2, 3), bet(0.285, 5, 1), bet(0.407, 0, 4), bet(0.126, 4, 1), bet(0.386, 3, 2)
     ]
   }
 
   const highestBet = () => allBets()[15]
-
   const bets = (n: number) => allBets().filter(({ bet }) => n === bet)
   const betCount = (n: number) => bets(n).length.wei
   const betSum = (n: number) =>
@@ -69,7 +49,7 @@ describe('Salad', () => {
       .map((_, i) => betSum(i))
       .reduce((a, b) => a.add(b))
 
-  async function placeAllBets() {
+  const placeAllBets = async () => {
     await salad.connect(owner).setMinValue((0.001).eth)
 
     for (const { value, bet, bet2, player, referrer } of allBets()) {

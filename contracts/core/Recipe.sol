@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "../ds/RedBlackTree.sol";
-import "../ds/EnumerableSet.sol";
+import "../ds/EnumerableMap.sol";
 import "../security/SafeEntry.sol";
 import "../utils/TransferWithCommission.sol";
 import "../utils/ValueLimits.sol";
@@ -11,9 +11,8 @@ import "../utils/WhirlpoolConsumer.sol";
 
 struct Round {
   Tree sortedBids;
-  mapping(uint256 => AddressSet) bidToBidders;
-  mapping(address => uint256) biddersToBids;
-  AddressSet bidders;
+  mapping(uint256 => uint256) numBiddersAtBid;
+  AddressMap bidders;
   uint256 pendingReward;
   address winner;
   uint256 total;
@@ -22,9 +21,9 @@ struct Round {
 
 contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEntry {
   using RedBlackTree for Tree;
-  using EnumerableSet for AddressSet;
+  using EnumerableMap for AddressMap;
 
-  Round[] internal rounds;
+  mapping(uint256 => Round) internal rounds;
   uint256 public currentRound;
 
   uint16 public constant MAX_HIGHEST_BIDDER_WIN_ODDS = 10000;
@@ -38,22 +37,22 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeE
 
   function createBid(uint256 id, address referrer) external payable notContract nonReentrant isMinValue {
     require(currentRound == id, "Recipe: Not current round");
-    require(rounds[id].winner == address(0), "Recipe: Round has ended");
 
     Round storage round = rounds[id];
 
-    uint256 myBid = round.biddersToBids[msg.sender];
+    require(round.winner == address(0), "Recipe: Round has ended");
 
-    round.bidToBidders[myBid].remove(msg.sender);
-    if (round.bidToBidders[myBid].size() == 0) round.sortedBids.remove(myBid);
+    uint256 myBid = round.bidders.get(msg.sender);
 
-    if (myBid == 0) round.bidders.add(msg.sender);
+    if (myBid > 0) {
+      if (--round.numBiddersAtBid[myBid] == 0) round.sortedBids.remove(myBid);
+    }
 
     myBid += msg.value;
 
     round.sortedBids.insert(myBid);
-    round.bidToBidders[myBid].add(msg.sender);
-    round.biddersToBids[msg.sender] = myBid;
+    round.numBiddersAtBid[myBid]++;
+    round.bidders.set(msg.sender, myBid);
 
     round.total += msg.value;
 
@@ -63,26 +62,20 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeE
   function claim(uint256 id) external notContract nonReentrant {
     Round storage round = rounds[id];
 
-    if (msg.sender == round.winner) {
-      require(round.pendingReward != 0, "Recipe: Nothing to claim");
+    (uint256 bid, uint256 reward) = userInfo(id, msg.sender);
+    require(reward != 0, "Recipe: Nothing to claim");
 
-      send(round.winner, round.pendingReward);
-      round.pendingReward = 0;
-      return;
+    round.pendingReward -= reward;
+    round.total -= bid + reward;
+
+    if (round.winner != address(0)) {
+      removeBid(id, round.bidders.values[msg.sender].index);
     }
 
-    uint256 myBid = round.biddersToBids[msg.sender];
-    require(myBid != 0, "Recipe: Nothing to claim");
-
-    uint256 myReward = (round.pendingReward * round.total) / myBid;
-    round.pendingReward -= myReward;
-
-    removeBid(id, round.bidders.indexes[msg.sender]);
-
-    send(msg.sender, myBid + myReward);
+    send(msg.sender, bid + reward);
   }
 
-  function pickOrEliminate() external {
+  function pickOrEliminate() external notContract nonReentrant {
     Round storage round = rounds[currentRound];
 
     require(round.total >= minAmountPerRound, "Recipe: Min amount not reached");
@@ -101,9 +94,37 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeE
     minAmountPerRound = minAmount;
   }
 
-  function highestBid(uint256 id) public view returns (address bidder, uint256 bid) {
+  function highestBid(uint256 id) public view returns (uint256 bid) {
     bid = rounds[id].sortedBids.last();
-    bidder = rounds[id].bidToBidders[bid].get(0);
+  }
+
+  function roundInfo(uint256 id)
+    public
+    view
+    returns (
+      uint256 _pendingReward,
+      address _winner,
+      uint256 _total,
+      bool _hasEnded
+    )
+  {
+    Round storage round = rounds[id];
+    return (round.pendingReward, round.winner, round.total, round.hasEnded);
+  }
+
+  function userInfo(uint256 id, address addr) public view returns (uint256 myBid, uint256 myReward) {
+    Round storage round = rounds[id];
+
+    myBid = round.bidders.get(addr);
+    if (msg.sender == round.winner) {
+      myReward = round.pendingReward;
+    } else {
+      myReward = myBid == 0 ? 0 : (round.pendingReward * round.total) / myBid;
+    }
+  }
+
+  function numBids(uint256 id) public view returns (uint256) {
+    return rounds[id].bidders.size();
   }
 
   function eliminate(
@@ -113,13 +134,12 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeE
   ) internal {
     Round storage round = rounds[id];
 
-    address bidder = round.bidders.get(index);
-    uint256 bid = round.biddersToBids[bidder];
+    address bidder = round.bidders.at(index);
+    uint256 bid = round.bidders.get(bidder);
 
-    (address highestBidder, uint256 _highestBid) = highestBid(id);
-    if (highestBidder == bidder && _highestBid == bid && highestBidderWins) {
+    if (bid == highestBid(id) && highestBidderWins) {
       round.pendingReward = round.total;
-      round.winner = highestBidder;
+      round.winner = bidder;
       currentRound++;
       return;
     }
@@ -131,13 +151,12 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeE
 
   function removeBid(uint256 id, uint256 index) internal {
     Round storage round = rounds[id];
-    address bidder = round.bidders.get(index);
-    uint256 bid = round.biddersToBids[bidder];
 
-    round.bidToBidders[bid].remove(bidder);
-    if (round.bidToBidders[bid].size() == 0) round.sortedBids.remove(bid);
+    address bidder = round.bidders.at(index);
+    uint256 bid = round.bidders.get(bidder);
+
+    if (--round.numBiddersAtBid[bid] == 0) round.sortedBids.remove(bid);
     round.bidders.removeAt(index);
-    delete round.biddersToBids[bidder];
   }
 
   function _consumeRandomness(uint256 id, uint256 randomness) internal override {

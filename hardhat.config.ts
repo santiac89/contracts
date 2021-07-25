@@ -1,4 +1,4 @@
-import { task } from 'hardhat/config'
+import { HardhatUserConfig } from 'hardhat/types'
 import '@typechain/hardhat'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-etherscan'
@@ -15,26 +15,10 @@ const mnemonicTestnet = readFile('.secret.testnet')
 const mnemonicMainnet = readFile('.secret.mainnet')
 const mnemonicDefault = 'test test test test test test test test test test test junk'
 
-const bscscanKey = readFile('.bscscan')
-const coinmarketcapKey = readFile('.coinmarketcap')
+const bscscanKey = readFile('.bscscan') || process.env.BSCSCAN_KEY
+const coinmarketcapKey = readFile('.coinmarketcap') || process.env.COINMARKETCAP_KEY
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task('accounts', 'Prints the list of accounts', async (args, hre) => {
-  const accounts = await hre.ethers.getSigners()
-
-  for (const account of accounts) {
-    console.log(account.address)
-  }
-})
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
-
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-export default {
+const config: HardhatUserConfig = {
   networks: {
     localhost: {
       url: 'http://127.0.0.1:8545'
@@ -83,6 +67,10 @@ export default {
   },
   gasReporter: {
     currency: 'USD',
-    coinmarketcap: coinmarketcapKey
+    coinmarketcap: coinmarketcapKey,
+    outputFile: 'coverage/gas-report.txt',
+    noColors: true
   }
 }
+
+export default config

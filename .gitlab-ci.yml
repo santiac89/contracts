@@ -27,6 +27,7 @@ test:
   stage: test
   script:
     - yarn hardhat coverage
+    - COINMARKETCAP_KEY=$COINMARKETCAP_KEY yarn test # gas report
 
 pages:
   stage: deploy

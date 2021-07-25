@@ -1,4 +1,4 @@
-const add = [
+const addresses = [
   '0xE800ff2538cE645bE278338c372E69C1093f36Ef',
   '0x85F04349806B0f61eE81ba2c2DDDB951Ccc0a263',
   '0xB6Fc3833F2f3DAA7A9CDad41Eead62fb9f388241',
@@ -51,7 +51,7 @@ const add = [
   '0xBea92cAd756c752bB0E81581E537B155Df9A56B9'
 ]
 
-const num = [
+const numbers = [
   0.7205368692834257, 0.1728073564792394, 0.1978637574105196, 0.6554724489076624, 0.2723732305862797,
   0.2836436611202746, 0.9658350571520075, 0.8362894550871384, 0.8295572945101737, 0.8318129585741012,
   0.2306635574537616, 0.0969890314930217, 0.8860385124786117, 0.0943007330120379, 0.8181182349876603,
@@ -94,16 +94,19 @@ const num = [
   0.7090134237061794, 0.8529736891165158, 0.7853797483087765, 0.1818164909228406, 0.0489857099291994
 ]
 
+let n = numbers.slice()
+let a = addresses.slice()
+
 // We need pseudo-random, yet predicatable randomness for consistent coverage reports.
 export function random() {
-  if (!num.length) throw new Error('Cannot generate any more numbers.')
+  if (!n.length) n = numbers.slice()
 
-  return num.pop()
+  return n.pop()!
 }
 
 export function randomAddresses(n = 1) {
-  if (n > add.length) throw new Error('Cannot generate any more addresses.')
-  return add.splice(0, n)
+  if (n > a.length) a = addresses.slice()
+  return a.splice(0, n)
 }
 
 export function randomAddress() {
