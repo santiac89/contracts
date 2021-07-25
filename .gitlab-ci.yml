@@ -7,27 +7,37 @@ stages:
 
 cache:
   paths:
-    - node_modules/
-    - coverage/
-    - artifacts/
-    - types/
-    - gas-report/
+    - node_modules
 
 compile:
   stage: build
   script:
     - yarn
     - yarn hardhat compile
+  artifacts:
+    paths:
+      - artifacts
+      - types
 
 lint:
   stage: test
   script:
     - yarn lint
+  needs:
+    - job: compile
+      artifacts: true
 
 coverage:
   stage: test
   script:
     - yarn hardhat coverage
+  artifacts:
+    paths:
+      - coverage
+    expire_in: 1 week
+  needs:
+    - job: compile
+      artifacts: true
 
 gas-report:
   stage: test
@@ -36,6 +46,13 @@ gas-report:
     - COINMARKETCAP_KEY=$COINMARKETCAP_KEY yarn test # gas report
     - echo "<pre>" > gas-report/index.html
     - yarn --silent ansi-to-html gas-report/index.txt --fg black --bg white >> gas-report/index.html
+  artifacts:
+    paths:
+      - gas-report
+    expire_in: 1 week
+  needs:
+    - job: compile
+      artifacts: true
 
 pages:
   stage: deploy
@@ -43,6 +60,11 @@ pages:
     - rm -rf public
     - mv coverage public
     - mv gas-report public/gas-report
+  needs:
+    - job: gas-report
+      artifacts: true
+    - job: coverage
+      artifacts: true
   artifacts:
     paths:
       - public
