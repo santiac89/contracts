@@ -54,13 +54,6 @@ gas-report:
     - job: compile
       artifacts: true
 
-
-mythril:
-  image: mythril/myth
-  stage: test
-  script:
-    - myth analyze contracts/core/Salad.sol
-
 pages:
   stage: deploy
   script:
