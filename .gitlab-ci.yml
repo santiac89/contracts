@@ -23,10 +23,14 @@ lint:
   script:
     - yarn lint
 
-test:
+coverage:
   stage: test
   script:
     - yarn hardhat coverage
+
+gas-report:
+  stage: test
+  script:
     - COINMARKETCAP_KEY=$COINMARKETCAP_KEY yarn test # gas report
 
 pages:
