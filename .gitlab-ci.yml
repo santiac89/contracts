@@ -11,6 +11,7 @@ cache:
     - coverage/
     - artifacts/
     - types/
+    - gas-report.txt
 
 compile:
   stage: build
