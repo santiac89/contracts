@@ -12,8 +12,8 @@ artifacts
 
 # Coverage
 coverage.json
-coverage/
-gas-report.txt
+coverage
+gas-report
 
 # Typechain
-types/
+types

@@ -68,8 +68,7 @@ const config: HardhatUserConfig = {
   gasReporter: {
     currency: 'USD',
     coinmarketcap: coinmarketcapKey,
-    outputFile: 'gas-report.txt',
-    noColors: true
+    outputFile: 'gas-report/index.txt'
   }
 }
 

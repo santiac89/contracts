@@ -1167,6 +1167,13 @@ ansi-styles@^3.2.0, ansi-styles@^3.2.1:
   dependencies:
     color-convert "^1.9.0"
 
+ansi-to-html@^0.7.1:
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/ansi-to-html/-/ansi-to-html-0.7.1.tgz#22411b5840c929a747b1bb6ced718fbba5154a14"
+  integrity sha512-PPpOy/TeLE6xERG5CNNpm1cLTIW1IeWULleeVc089paF45zfz5gzNPXeSQyxt1sUiKVIYZlY86AYx3fsMdIr5w==
+  dependencies:
+    entities "^2.2.0"
+
 antlr4@4.7.1:
   version "4.7.1"
   resolved "https://registry.yarnpkg.com/antlr4/-/antlr4-4.7.1.tgz#69984014f096e9e775f53dd9744bf994d8959773"
@@ -3042,6 +3049,11 @@ enquirer@^2.3.0:
   integrity sha512-yjNnPr315/FjS4zIsUxYguYUPP2e1NK4d7E7ZOLiyYCcbFBiTMyID+2wvm2w6+pZ/odMA7cRkjhsPbltwBOrLg==
   dependencies:
     ansi-colors "^4.1.1"
+
+entities@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/entities/-/entities-2.2.0.tgz#098dc90ebb83d8dffa089d55256b351d34c4da55"
+  integrity sha512-p92if5Nz619I0w+akJrLZH0MX0Pb5DX39XOwQTtXSdQQOaYH03S1uIQp4mhOZtAXrxq4ViO67YTiLBo2638o9A==
 
 env-paths@^2.2.0:
   version "2.2.1"
