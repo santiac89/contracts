@@ -14,12 +14,14 @@
     "testnet-verify-jelly": "hardhat verify --constructor-args scripts/Jelly.args.testnet.ts --network testnet",
     "testnet-deploy-salad": "hardhat run --network testnet scripts/Salad.deploy.testnet.ts",
     "testnet-verify-salad": "hardhat verify --constructor-args scripts/Salad.args.testnet.ts --network testnet",
+    "testnet-deploy-recipe": "hardhat run --network testnet scripts/Recipe.deploy.testnet.ts",
+    "testnet-verify-recipe": "hardhat verify --constructor-args scripts/Recipe.args.testnet.ts --network testnet",
     "testnet-deploy-donut": "hardhat run --network testnet scripts/Donut.deploy.ts",
     "testnet-verify-donut": "hardhat verify --network testnet"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^2.1.3",
+    "@nomiclabs/hardhat-etherscan": "^2.1.4",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@typechain/ethers-v5": "^7.0.1",
     "@typechain/hardhat": "^2.2.0",
@@ -30,6 +32,7 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.1",
     "hardhat": "^2.4.1",
+    "hardhat-gas-reporter": "^1.0.4",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "sinon": "^11.1.1",

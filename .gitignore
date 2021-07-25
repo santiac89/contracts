@@ -8,6 +8,7 @@ artifacts
 # Secrets
 .secret.*
 .bscscan
+.coinmarketcap
 
 # Coverage
 coverage.json
