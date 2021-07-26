@@ -99,7 +99,7 @@ describe('Salad', () => {
     })
 
     it('throws error if bet is for anything other than 0-5', async () => {
-      const msg = 'Can only bet 0-5'
+      const msg = 'function was called with incorrect parameters'
 
       await expect(salad.addIngredient(0, 1, 7, referrers[0].address, { value: (0.1).eth })).to.be.revertedWith(msg)
       await expect(salad.addIngredient(0, 7, 1, referrers[0].address, { value: (0.1).eth })).to.be.revertedWith(msg)

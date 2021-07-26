@@ -6,6 +6,15 @@ import "../utils/ValueLimits.sol";
 import "../utils/TransferWithCommission.sol";
 import "../utils/WhirlpoolConsumer.sol";
 
+enum SaladType {
+  Pepper,
+  Cucumber,
+  Onion,
+  Carrot,
+  Corn,
+  Broccoli
+}
+
 enum SaladStatus {
   BowlCreated,
   Prepared,
@@ -13,19 +22,19 @@ enum SaladStatus {
 }
 
 struct SaladBet {
-  uint8 bet;
-  uint8 bet2;
+  SaladType bet;
+  SaladType bet2;
   uint256 value;
 }
 
 struct SaladBowl {
-  uint256[6] sum;
+  mapping(SaladType => uint256) sum;
   uint256 createdOn;
   uint256 expiresOn;
   uint256 maxBet;
   address maxBetter;
   SaladStatus status;
-  uint8 result;
+  SaladType result;
 }
 
 // solhint-disable not-rely-on-time
@@ -40,26 +49,25 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
 
   uint256 public currentSalad = 0;
 
-  event IngredientAdded(uint256 id, address creator, uint8 bet, uint8 bet2, uint256 value);
-  event IngredientIncreased(uint256 id, address creator, uint8 bet2, uint256 newValue);
+  event IngredientAdded(uint256 id, address creator, SaladType bet, SaladType bet2, uint256 value);
+  event IngredientIncreased(uint256 id, address creator, SaladType bet2, uint256 newValue);
   event Claimed(uint256 id, address creator, uint256 value, address referrer);
 
   event SaladBowlCreated(uint256 id, uint256 expiresOn);
   event SaladPrepared(uint256 id);
-  event SaladServed(uint256 id, uint8 result);
+  event SaladServed(uint256 id, SaladType result);
 
   // solhint-disable no-empty-blocks
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) ValueLimits(0.01 ether, 100 ether) {}
 
   function addIngredient(
     uint256 id,
-    uint8 bet,
-    uint8 bet2,
+    SaladType bet,
+    SaladType bet2,
     address referrer
   ) external payable isMinValue {
     require(currentSalad == id, "Salad: Not current salad");
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
-    require(bet >= 0 && bet <= 5 && bet2 >= 0 && bet2 <= 5, "Salad: Can only bet 0-5");
     require(saladBets[id][msg.sender].value == 0, "Salad: Already placed bet");
 
     if (salads[currentSalad].createdOn == 0) createNewSalad(false);
@@ -78,7 +86,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     emit IngredientAdded(id, msg.sender, bet, bet2, msg.value);
   }
 
-  function increaseIngredient(uint256 id, uint8 bet2) external payable {
+  function increaseIngredient(uint256 id, SaladType bet2) external payable {
     require(msg.value > 0, "Salad: Value must be more than 0");
     require(saladBets[id][msg.sender].value > 0, "Salad: No bet placed yet");
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
@@ -109,8 +117,8 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     require(saladBets[id][msg.sender].value > 0, "Salad: Nothing to claim");
     require(saladBets[id][msg.sender].bet != salads[id].result, "Salad: You didn't win!");
 
-    uint256[6] storage s = salads[id].sum;
-    uint8 myBet = saladBets[id][msg.sender].bet;
+    mapping(SaladType => uint256) storage s = salads[id].sum;
+    SaladType myBet = saladBets[id][msg.sender].bet;
     uint256 myValue = saladBets[id][msg.sender].value;
 
     bool jackpot = salads[id].result != saladBets[id][salads[id].maxBetter].bet &&
@@ -119,7 +127,13 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     uint256 myReward;
 
     if (jackpot && salads[id].maxBetter == msg.sender) {
-      myReward = s[0] + s[1] + s[2] + s[3] + s[4] + s[5];
+      myReward =
+        s[SaladType.Pepper] +
+        s[SaladType.Cucumber] +
+        s[SaladType.Onion] +
+        s[SaladType.Carrot] +
+        s[SaladType.Corn] +
+        s[SaladType.Broccoli];
     } else if (!jackpot) {
       myReward = ((5 * s[myBet] + s[salads[id].result]) * myValue) / (5 * s[myBet]);
     }
@@ -132,13 +146,19 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     send(msg.sender, myReward);
   }
 
-  function betSum(uint256 id, uint8 bet) external view returns (uint256) {
+  function betSum(uint256 id, SaladType bet) external view returns (uint256) {
     return salads[id].sum[bet];
   }
 
   function sum(uint256 id) external view returns (uint256) {
-    uint256[6] storage s = salads[id].sum;
-    return s[0] + s[1] + s[2] + s[3] + s[4] + s[5];
+    mapping(SaladType => uint256) storage s = salads[id].sum;
+    return
+      s[SaladType.Pepper] +
+      s[SaladType.Cucumber] +
+      s[SaladType.Onion] +
+      s[SaladType.Carrot] +
+      s[SaladType.Corn] +
+      s[SaladType.Broccoli];
   }
 
   function setExpiry(uint256 val) external onlyOwner {
@@ -152,7 +172,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     if (salads[id].maxBet == amount) salads[id].maxBetter = msg.sender;
   }
 
-  function serveSalad(uint256 id, uint8 result) internal {
+  function serveSalad(uint256 id, SaladType result) internal {
     salads[id].result = result;
     salads[id].status = SaladStatus.Served;
 
@@ -171,6 +191,6 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   }
 
   function _consumeRandomness(uint256 id, uint256 randomness) internal override {
-    serveSalad(id, uint8(randomness % 6));
+    serveSalad(id, SaladType(randomness % 6));
   }
 }

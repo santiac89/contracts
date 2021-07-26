@@ -19,8 +19,6 @@ struct JellyBet {
 }
 
 contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
-  using Address for address;
-
   mapping(uint256 => JellyBet) public bets;
 
   uint256 public numBets = 0;
