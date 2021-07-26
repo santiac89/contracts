@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../security/SafeEntry.sol";
 import "../utils/ValueLimits.sol";
 import "../utils/TransferWithCommission.sol";
 import "../utils/WhirlpoolConsumer.sol";
@@ -31,10 +29,7 @@ struct SaladBowl {
 }
 
 // solhint-disable not-rely-on-time
-contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEntry {
-  using Address for address;
-  using Math for uint256;
-
+contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   mapping(uint256 => SaladBowl) public salads;
   mapping(uint256 => mapping(address => SaladBet)) public saladBets;
 
@@ -61,7 +56,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEn
     uint8 bet,
     uint8 bet2,
     address referrer
-  ) external payable nonReentrant notContract isMinValue {
+  ) external payable isMinValue {
     require(currentSalad == id, "Salad: Not current salad");
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
     require(bet >= 0 && bet <= 5 && bet2 >= 0 && bet2 <= 5, "Salad: Can only bet 0-5");
@@ -83,7 +78,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEn
     emit IngredientAdded(id, msg.sender, bet, bet2, msg.value);
   }
 
-  function increaseIngredient(uint256 id, uint8 bet2) external payable nonReentrant notContract {
+  function increaseIngredient(uint256 id, uint8 bet2) external payable {
     require(msg.value > 0, "Salad: Value must be more than 0");
     require(saladBets[id][msg.sender].value > 0, "Salad: No bet placed yet");
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
@@ -98,7 +93,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEn
     emit IngredientIncreased(id, msg.sender, bet2, saladBets[id][msg.sender].value);
   }
 
-  function prepareSalad(uint256 id) external nonReentrant notContract {
+  function prepareSalad(uint256 id) external {
     require(salads[id].expiresOn < block.timestamp, "Salad: Time is not up yet!");
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
 
@@ -109,7 +104,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEn
     emit SaladPrepared(id);
   }
 
-  function claim(uint256 id) external nonReentrant notContract {
+  function claim(uint256 id) external {
     require(salads[id].status == SaladStatus.Served, "Salad: Not ready to serve yet");
     require(saladBets[id][msg.sender].value > 0, "Salad: Nothing to claim");
     require(saladBets[id][msg.sender].bet != salads[id].result, "Salad: You didn't win!");
@@ -132,10 +127,9 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEn
     require(myReward > 0, "Salad: You didn't win!");
 
     delete saladBets[id][msg.sender];
+    emit Claimed(id, msg.sender, myReward, referrers[msg.sender]);
 
     send(msg.sender, myReward);
-
-    emit Claimed(id, msg.sender, myReward, referrers[msg.sender]);
   }
 
   function betSum(uint256 id, uint8 bet) external view returns (uint256) {
@@ -154,7 +148,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEn
   }
 
   function setMaxBetForSalad(uint256 id, uint256 amount) internal {
-    salads[id].maxBet = Math.max(salads[id].maxBet, amount);
+    if (amount > salads[id].maxBet) salads[id].maxBet = amount;
     if (salads[id].maxBet == amount) salads[id].maxBetter = msg.sender;
   }
 

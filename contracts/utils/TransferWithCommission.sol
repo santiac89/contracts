@@ -2,12 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "./Ownable.sol";
 
 abstract contract TransferWithCommission is Ownable {
-  using Address for address;
-
   uint16 public constant MAX_COMMISSION_RATE = 1000;
 
   uint16 public commissionRate = 500;
@@ -34,13 +31,13 @@ abstract contract TransferWithCommission is Ownable {
   function refund(address to, uint256 amount) internal {
     uint256 fee = (amount * cancellationFee) / 10000;
 
-    Address.sendValue(payable(to), amount - fee);
-    if (fee != 0) Address.sendValue(payable(owner()), fee);
+    _send(to, amount - fee);
+    if (fee != 0) _send(owner(), fee);
   }
 
   function send(address to, uint256 amount) internal {
     uint256 fee = (amount * commissionRate) / 10000;
-    Address.sendValue(payable(to), amount - fee);
+    _send(to, amount - fee);
 
     if (fee == 0) return;
 
@@ -48,10 +45,18 @@ abstract contract TransferWithCommission is Ownable {
     if (referrer != address(0)) {
       uint256 refBonus = (amount * referralRate) / 10000;
 
-      Address.sendValue(payable(referrer), refBonus);
+      _send(referrer, refBonus);
       fee -= refBonus;
     }
 
-    Address.sendValue(payable(owner()), fee);
+    _send(owner(), fee);
+  }
+
+  function _send(address to, uint256 value) internal {
+    require(address(this).balance >= value, "Transfer: insufficient balance");
+
+    // solhint-disable avoid-low-level-calls
+    (bool success, ) = payable(to).call{ value: value }("");
+    require(success, "Transfer: Unable to send");
   }
 }

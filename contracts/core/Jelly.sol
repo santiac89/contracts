@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "../security/SafeEntry.sol";
 import "../utils/ValueLimits.sol";
 import "../utils/TransferWithCommission.sol";
 import "../utils/WhirlpoolConsumer.sol";
@@ -19,7 +18,7 @@ struct JellyBet {
   uint256 value;
 }
 
-contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEntry {
+contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   using Address for address;
 
   mapping(uint256 => JellyBet) public bets;
@@ -34,7 +33,7 @@ contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEn
   // solhint-disable no-empty-blocks
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) ValueLimits(0.01 ether, 100 ether) {}
 
-  function createBet(JellyType bet, address referrer) external payable nonReentrant notContract isMinValue {
+  function createBet(JellyType bet, address referrer) external payable isMinValue {
     uint256 id = numBets;
 
     bets[id].creator = msg.sender;
@@ -48,16 +47,18 @@ contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEn
     numBets += 1;
   }
 
-  function cancelBet(uint256 id) external nonReentrant notContract {
+  function cancelBet(uint256 id) external {
     require(bets[id].creator == msg.sender, "Jelly: Not your bet");
 
-    refund(msg.sender, bets[id].value);
+    uint256 sentAmount = bets[id].value;
 
     emit BetCancelled(id);
     delete bets[id];
+
+    refund(msg.sender, sentAmount);
   }
 
-  function acceptBet(uint256 id, address referrer) external payable nonReentrant notContract {
+  function acceptBet(uint256 id, address referrer) external payable {
     require(bets[id].value != 0, "Jelly: Bet is unavailable");
     require(bets[id].joiner == address(0), "Jelly: Bet is already accepted");
     require(msg.value == bets[id].value, "Jelly: Unfair bet");

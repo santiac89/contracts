@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import "../ds/RedBlackTree.sol";
 import "../ds/EnumerableMap.sol";
-import "../security/SafeEntry.sol";
 import "../utils/TransferWithCommission.sol";
 import "../utils/ValueLimits.sol";
 import "../utils/WhirlpoolConsumer.sol";
@@ -19,7 +18,7 @@ struct Round {
   bool hasEnded;
 }
 
-contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeEntry {
+contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   using RedBlackTree for Tree;
   using EnumerableMap for AddressMap;
 
@@ -35,7 +34,7 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeE
   // solhint-disable no-empty-blocks
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) ValueLimits(0.001 ether, 100 ether) {}
 
-  function createBid(uint256 id, address referrer) external payable notContract nonReentrant isMinValue {
+  function createBid(uint256 id, address referrer) external payable isMinValue {
     require(currentRound == id, "Recipe: Not current round");
 
     Round storage round = rounds[id];
@@ -59,7 +58,7 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeE
     referrers[msg.sender] = referrer;
   }
 
-  function claim(uint256 id) external notContract nonReentrant {
+  function claim(uint256 id) external {
     Round storage round = rounds[id];
 
     (uint256 bid, uint256 reward) = userInfo(id, msg.sender);
@@ -75,7 +74,7 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, SafeE
     send(msg.sender, bid + reward);
   }
 
-  function pickOrEliminate() external notContract nonReentrant {
+  function pickOrEliminate() external {
     Round storage round = rounds[currentRound];
 
     require(round.total >= minAmountPerRound, "Recipe: Min amount not reached");

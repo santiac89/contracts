@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "../security/SafeEntry.sol";
 import "../utils/ValueLimits.sol";
 import "../utils/TransferWithCommission.sol";
 
@@ -13,7 +12,7 @@ struct DonutBet {
   uint256 block;
 }
 
-contract Donut is TransferWithCommission, ValueLimits, SafeEntry {
+contract Donut is TransferWithCommission, ValueLimits {
   uint8 public multiplier = 15;
 
   uint256 public constant MAX_EXPIRY = 4 days;
@@ -39,7 +38,7 @@ contract Donut is TransferWithCommission, ValueLimits, SafeEntry {
     return uint8(hash[31]) % 16 == bets[id].bet;
   }
 
-  function placeBet(uint8 bet, address referrer) external payable nonReentrant notContract isMinValue isMaxValue {
+  function placeBet(uint8 bet, address referrer) external payable isMinValue isMaxValue {
     uint64 id = numBets;
 
     bets[id].bet = bet;
@@ -54,15 +53,16 @@ contract Donut is TransferWithCommission, ValueLimits, SafeEntry {
     numBets += 1;
   }
 
-  function claim(uint64 id) external nonReentrant notContract {
+  function claim(uint64 id) external {
     require(bets[id].creator == msg.sender, "Donut: Nothing to claim");
     require(hasWon(id), "Donut: You didn't win");
 
-    send(payable(msg.sender), bets[id].value * multiplier);
+    uint256 sentAmount = bets[id].value * multiplier;
 
     emit BetClaimed(id, referrers[msg.sender]);
-
     delete bets[id];
+
+    send(payable(msg.sender), sentAmount);
   }
 
   function setMultiplier(uint8 val) external onlyOwner {
@@ -73,7 +73,10 @@ contract Donut is TransferWithCommission, ValueLimits, SafeEntry {
   function deposit() external payable {}
 
   function withdraw(uint256 amount) external onlyOwner {
-    Address.sendValue(payable(owner()), amount);
+    // solhint-disable avoid-low-level-calls
+    (bool success, ) = payable(owner()).call{ value: amount }("");
+
+    require(success, "Donut: Withdraw failed");
   }
 
   function getBlockHash(uint256 blockNumber) internal view virtual returns (bytes32) {
