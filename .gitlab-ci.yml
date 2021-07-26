@@ -54,15 +54,6 @@ gas-report:
     - job: compile
       artifacts: true
 
-mythril:
-  stage: test
-  script:
-    - docker pull mythril/myth
-    - docker run -v $(pwd):/tmp mythril/myth analyze /tmp/contracts/core/Donut.sol
-    - docker run -v $(pwd):/tmp mythril/myth analyze /tmp/contracts/core/Jelly.sol
-    - docker run -v $(pwd):/tmp mythril/myth analyze /tmp/contracts/core/Salad.sol
-    - docker run -v $(pwd):/tmp mythril/myth analyze /tmp/contracts/core/Recipe.sol
-
 pages:
   stage: deploy
   script:
