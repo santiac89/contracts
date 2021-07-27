@@ -24,6 +24,7 @@ describe('Recipe', () => {
   let mockIWhirlpool: MockContract
 
   const bidFactory = (i: { i: number }) => (value: number) => ({
+    i: i.i,
     value: value.eth,
     bidder: bidders[i.i],
     referrer: referrers[i.i++]
@@ -189,7 +190,7 @@ describe('Recipe', () => {
             total: totalSum(),
             numBidders: (25).wei,
             highestBid: highestBid().value,
-            pendingReward: totalSum(),
+            pendingReward: totalSum().sub(highestBid().value),
             winner: highestBid().bidder.address,
             lastPick: time.wei
           })
@@ -201,7 +202,10 @@ describe('Recipe', () => {
         })
 
         it('marks all pooled bids as pending reward of the winner', async () => {
-          expect(await recipe.bidderInfo(0, highestBid().bidder.address)).to.eql([highestBid().value, totalSum()])
+          expect(await recipe.bidderInfo(0, highestBid().bidder.address)).to.eql([
+            highestBid().value,
+            totalSum().sub(highestBid().value)
+          ])
         })
       })
 
@@ -315,10 +319,44 @@ describe('Recipe', () => {
       await recipe.connect(bidders[1]).claim(0)
 
       expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
-        total: (13).eth.sub((2).eth.div(15)), // 15 - 2 - 2 / 15
+        total: (13).eth.sub((2).eth.div(14)), // 15 - 2 - 2 / (15 - 1)
         numBidders: (3).wei, // one eliminated, one claimed
         highestBid: (5).eth,
-        pendingReward: (1).eth.sub((2).eth.div(15)), // 1 - 2 / 15
+        pendingReward: (1).eth.sub((2).eth.div(14)), // 1 - 2 / (15 - 1)
+        winner: constants.AddressZero
+      })
+
+      await recipe.connect(bidders[2]).claim(0)
+
+      expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
+        total: (10).eth.sub((5).eth.div(14)), // 15 - 2 - 2 / (15 - 1) - 3 - 3 / (15 - 1)
+        numBidders: (2).wei, // one eliminated, two claimed
+        highestBid: (5).eth,
+        pendingReward: (1).eth.sub((5).eth.div(14)), // 1 - 2 / (15 - 1) - 3 / (15 - 1)
+        winner: constants.AddressZero
+      })
+
+      await recipe.connect(bidders[3]).claim(0)
+
+      expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
+        total: (6).eth
+          .sub((9).eth.div(14)) // 15 - 2 - 2 / (15 - 1) - 3 - 3 / (15 - 1) - 4 - 4 / (15 - 1)
+          .add(1), // rounding error
+        numBidders: (1).wei, // one eliminated, three claimed
+        highestBid: (5).eth,
+        pendingReward: (1).eth
+          .sub((9).eth.div(14)) // 1 - 2 / (15 - 1) - 3 / (15 - 1) - 4 / (15 - 1)
+          .add(1 /* rounding error */),
+        winner: constants.AddressZero
+      })
+
+      await recipe.connect(bidders[4]).claim(0)
+
+      expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
+        total: (0).eth, // 15 - 2 - 2 / (15 - 1) - 3 - 3 / (15 - 1) - 4 - 4 / (15 - 1) - 5 - 5 / (15 - 1)
+        numBidders: (0).wei, // one eliminated, all claimed
+        highestBid: (0).eth,
+        pendingReward: (0).eth, // 1 - 2 / (15 - 1) - 3 / (15 - 1) - 4 / (15 - 1) - 5 / (15 - 1)
         winner: constants.AddressZero
       })
     })
@@ -330,7 +368,7 @@ describe('Recipe', () => {
 
       await expect(recipe.connect(bidders[1]).claim(0))
         .to.emit(recipe, 'Claimed')
-        .withArgs(0, bidders[1].address, (2).eth.add((2).eth.div(15)))
+        .withArgs(0, bidders[1].address, (2).eth.add((2).eth.div(14)))
     })
 
     it('transfers the original bid amount to the bidder, less fees and referral bonus', async () => {
@@ -338,7 +376,7 @@ describe('Recipe', () => {
       await recipe.eliminate()
       await recipe.connect(owner).consumeRandomness(constants.HashZero, 0)
 
-      const reward = (2).eth.add((2).eth.div(15))
+      const reward = (2).eth.add((2).eth.div(14))
 
       await expect(await recipe.connect(bidders[1]).claim(0)).to.changeEtherBalances(
         [recipe, bidders[1], owner, referrers[1]],
@@ -351,10 +389,92 @@ describe('Recipe', () => {
       )
     })
 
-    describe('when the highest bidder wins', async () => {
-      it('makes claims of everyone else fail', async () => {})
+    it('allows claim even if no one was eliminated', async () => {
+      await createSimpleBids(1)
+
+      await expect(await recipe.claim(0)).to.changeEtherBalances(
+        [recipe, bidders[0], owner, referrers[0]],
+        [(-1).eth, (0.95).eth, (0.04).eth, (0.01).eth]
+      )
+
+      expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
+        total: (0).eth,
+        numBidders: (0).wei,
+        highestBid: (0).eth,
+        pendingReward: (0).eth,
+        winner: constants.AddressZero
+      })
     })
 
-    it('is zero sum, if everyone claims', async () => {})
+    describe('when the highest bidder wins', async () => {
+      beforeEach(async () => {
+        await createBids(25)
+        await recipe.eliminate()
+        await recipe.connect(owner).consumeRandomness(constants.HashZero, 1015)
+      })
+
+      it('makes claims of everyone else fail', async () => {
+        for (let { bidder, value } of allBids()) {
+          if (value.eq(highestBid().value)) continue
+
+          await expect(recipe.connect(bidder).claim(0)).to.be.revertedWith('Nothing to claim')
+        }
+      })
+
+      it("transfers all of pool's money to the winner", async () => {
+        const { bidder, referrer } = highestBid()
+        const reward = totalSum()
+
+        await expect(await recipe.connect(bidder).claim(0)).to.changeEtherBalances(
+          [recipe, bidder, owner, referrer],
+          [
+            reward.mul(-1),
+            reward.sub(reward.mul(5).div(100)), // 95%
+            reward.mul(5).div(100).sub(reward.mul(1).div(100)), // 4%
+            reward.mul(1).div(100)
+          ]
+        )
+      })
+    })
+
+    describe('when a couple bids get eliminated', async () => {
+      beforeEach(async () => {
+        await createBids(25)
+
+        // lets eliminate 0, 4, 8, 12, 16, 20, 24
+        // after elimination, indexes are: 0, 3, 6, 9, 12, 15, 18
+        for (let i = 0; i < 7; i++) {
+          await recipe.eliminate()
+          await fastForward((10).minutes)
+          await recipe.connect(owner).consumeRandomness(constants.HashZero, i * 3)
+        }
+      })
+
+      it('processes claim of everyone appropriately', async () => {
+        for (let { bidder, value, i } of allBids()) {
+          if (i % 4 == 0) {
+            await expect(recipe.connect(bidder).claim(0)).to.be.revertedWith('Nothing to claim')
+          } else {
+            await recipe.connect(bidder).claim(0) // works fine
+          }
+        }
+      })
+
+      it('is zero sum, if everyone claims', async () => {
+        for (let { bidder, i } of allBids()) {
+          if (i % 4 != 0) {
+            await recipe.connect(bidder).claim(0)
+          }
+        }
+
+        expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
+          total: (0).eth,
+          numBidders: (0).wei,
+          highestBid: (0).eth,
+          pendingReward: (0).eth,
+          winner: constants.AddressZero
+        })
+      })
+    })
   })
 })

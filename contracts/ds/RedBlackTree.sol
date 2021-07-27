@@ -50,7 +50,7 @@ library RedBlackTree {
   function next(Tree storage self, uint256 target) internal view returns (uint256 cursor) {
     if (target == EMPTY) return EMPTY;
     if (self.nodes[target].right != EMPTY) {
-      cursor = treeMinimum(self, self.nodes[target].right);
+      cursor = _treeMinimum(self, self.nodes[target].right);
     } else {
       cursor = self.nodes[target].parent;
       while (cursor != EMPTY && target == self.nodes[cursor].right) {
@@ -63,7 +63,7 @@ library RedBlackTree {
   function prev(Tree storage self, uint256 target) internal view returns (uint256 cursor) {
     if (target == EMPTY) return EMPTY;
     if (self.nodes[target].left != EMPTY) {
-      cursor = treeMaximum(self, self.nodes[target].left);
+      cursor = _treeMaximum(self, self.nodes[target].left);
     } else {
       cursor = self.nodes[target].parent;
       while (cursor != EMPTY && target == self.nodes[cursor].left) {
@@ -98,7 +98,7 @@ library RedBlackTree {
     } else {
       self.nodes[cursor].right = key;
     }
-    insertFixup(self, key);
+    _insertFixup(self, key);
   }
 
   function remove(Tree storage self, uint256 key) internal {
@@ -132,7 +132,7 @@ library RedBlackTree {
     }
     bool doFixup = !self.nodes[cursor].red;
     if (cursor != key) {
-      replaceParent(self, cursor, key);
+      _replaceParent(self, cursor, key);
       self.nodes[cursor].left = self.nodes[key].left;
       self.nodes[self.nodes[cursor].left].parent = cursor;
       self.nodes[cursor].right = self.nodes[key].right;
@@ -141,26 +141,26 @@ library RedBlackTree {
       (cursor, key) = (key, cursor);
     }
     if (doFixup) {
-      removeFixup(self, probe);
+      _removeFixup(self, probe);
     }
     delete self.nodes[cursor];
   }
 
-  function treeMinimum(Tree storage self, uint256 key) private view returns (uint256) {
+  function _treeMinimum(Tree storage self, uint256 key) private view returns (uint256) {
     while (self.nodes[key].left != EMPTY) {
       key = self.nodes[key].left;
     }
     return key;
   }
 
-  function treeMaximum(Tree storage self, uint256 key) private view returns (uint256) {
+  function _treeMaximum(Tree storage self, uint256 key) private view returns (uint256) {
     while (self.nodes[key].right != EMPTY) {
       key = self.nodes[key].right;
     }
     return key;
   }
 
-  function rotateLeft(Tree storage self, uint256 key) private {
+  function _rotateLeft(Tree storage self, uint256 key) private {
     uint256 cursor = self.nodes[key].right;
     uint256 keyParent = self.nodes[key].parent;
     uint256 cursorLeft = self.nodes[cursor].left;
@@ -180,7 +180,7 @@ library RedBlackTree {
     self.nodes[key].parent = cursor;
   }
 
-  function rotateRight(Tree storage self, uint256 key) private {
+  function _rotateRight(Tree storage self, uint256 key) private {
     uint256 cursor = self.nodes[key].left;
     uint256 keyParent = self.nodes[key].parent;
     uint256 cursorRight = self.nodes[cursor].right;
@@ -200,7 +200,7 @@ library RedBlackTree {
     self.nodes[key].parent = cursor;
   }
 
-  function insertFixup(Tree storage self, uint256 key) private {
+  function _insertFixup(Tree storage self, uint256 key) private {
     uint256 cursor;
     while (key != self.root && self.nodes[self.nodes[key].parent].red) {
       uint256 keyParent = self.nodes[key].parent;
@@ -214,12 +214,12 @@ library RedBlackTree {
         } else {
           if (key == self.nodes[keyParent].right) {
             key = keyParent;
-            rotateLeft(self, key);
+            _rotateLeft(self, key);
           }
           keyParent = self.nodes[key].parent;
           self.nodes[keyParent].red = false;
           self.nodes[self.nodes[keyParent].parent].red = true;
-          rotateRight(self, self.nodes[keyParent].parent);
+          _rotateRight(self, self.nodes[keyParent].parent);
         }
       } else {
         cursor = self.nodes[self.nodes[keyParent].parent].left;
@@ -231,19 +231,19 @@ library RedBlackTree {
         } else {
           if (key == self.nodes[keyParent].left) {
             key = keyParent;
-            rotateRight(self, key);
+            _rotateRight(self, key);
           }
           keyParent = self.nodes[key].parent;
           self.nodes[keyParent].red = false;
           self.nodes[self.nodes[keyParent].parent].red = true;
-          rotateLeft(self, self.nodes[keyParent].parent);
+          _rotateLeft(self, self.nodes[keyParent].parent);
         }
       }
     }
     self.nodes[self.root].red = false;
   }
 
-  function replaceParent(
+  function _replaceParent(
     Tree storage self,
     uint256 a,
     uint256 b
@@ -261,7 +261,7 @@ library RedBlackTree {
     }
   }
 
-  function removeFixup(Tree storage self, uint256 key) private {
+  function _removeFixup(Tree storage self, uint256 key) private {
     uint256 cursor;
     while (key != self.root && !self.nodes[key].red) {
       uint256 keyParent = self.nodes[key].parent;
@@ -270,7 +270,7 @@ library RedBlackTree {
         if (self.nodes[cursor].red) {
           self.nodes[cursor].red = false;
           self.nodes[keyParent].red = true;
-          rotateLeft(self, keyParent);
+          _rotateLeft(self, keyParent);
           cursor = self.nodes[keyParent].right;
         }
         if (!self.nodes[self.nodes[cursor].left].red && !self.nodes[self.nodes[cursor].right].red) {
@@ -280,13 +280,13 @@ library RedBlackTree {
           if (!self.nodes[self.nodes[cursor].right].red) {
             self.nodes[self.nodes[cursor].left].red = false;
             self.nodes[cursor].red = true;
-            rotateRight(self, cursor);
+            _rotateRight(self, cursor);
             cursor = self.nodes[keyParent].right;
           }
           self.nodes[cursor].red = self.nodes[keyParent].red;
           self.nodes[keyParent].red = false;
           self.nodes[self.nodes[cursor].right].red = false;
-          rotateLeft(self, keyParent);
+          _rotateLeft(self, keyParent);
           key = self.root;
         }
       } else {
@@ -294,7 +294,7 @@ library RedBlackTree {
         if (self.nodes[cursor].red) {
           self.nodes[cursor].red = false;
           self.nodes[keyParent].red = true;
-          rotateRight(self, keyParent);
+          _rotateRight(self, keyParent);
           cursor = self.nodes[keyParent].left;
         }
         if (!self.nodes[self.nodes[cursor].right].red && !self.nodes[self.nodes[cursor].left].red) {
@@ -304,13 +304,13 @@ library RedBlackTree {
           if (!self.nodes[self.nodes[cursor].left].red) {
             self.nodes[self.nodes[cursor].right].red = false;
             self.nodes[cursor].red = true;
-            rotateLeft(self, cursor);
+            _rotateLeft(self, cursor);
             cursor = self.nodes[keyParent].left;
           }
           self.nodes[cursor].red = self.nodes[keyParent].red;
           self.nodes[keyParent].red = false;
           self.nodes[self.nodes[cursor].left].red = false;
-          rotateRight(self, keyParent);
+          _rotateRight(self, keyParent);
           key = self.root;
         }
       }

@@ -10,7 +10,7 @@ import "../utils/WhirlpoolConsumer.sol";
 
 struct Round {
   Tree sortedBids;
-  mapping(uint256 => uint256) numBiddersAtBid;
+  mapping(uint256 => uint256) numBidders;
   AddressMap bidders;
   uint256 pendingReward;
   address winner;
@@ -55,17 +55,17 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     require(currentRound == id, "Recipe: Not current round");
 
     Round storage round = rounds[id];
-    uint256 myBid = round.bidders.get(msg.sender);
+    uint256 bid = round.bidders.get(msg.sender);
 
-    if (myBid > 0) {
-      if (--round.numBiddersAtBid[myBid] == 0) round.sortedBids.remove(myBid);
+    if (bid > 0) {
+      if (--round.numBidders[bid] == 0) round.sortedBids.remove(bid);
     }
 
-    myBid += msg.value;
+    bid += msg.value;
 
-    round.sortedBids.insert(myBid);
-    round.numBiddersAtBid[myBid]++;
-    round.bidders.set(msg.sender, myBid);
+    round.sortedBids.insert(bid);
+    round.numBidders[bid]++;
+    round.bidders.set(msg.sender, bid);
 
     round.total += msg.value;
 
@@ -84,7 +84,8 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     round.total -= bid + pendingReward;
 
     if (round.winner == address(0)) {
-      removeBidder(id, msg.sender);
+      if (--round.numBidders[bid] == 0) round.sortedBids.remove(bid);
+      round.bidders.remove(msg.sender);
     }
 
     emit Claimed(id, msg.sender, bid + pendingReward);
@@ -135,14 +136,17 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
       });
   }
 
-  function bidderInfo(uint256 id, address addr) public view returns (uint256 myBid, uint256 myReward) {
+  function bidderInfo(uint256 id, address addr) public view returns (uint256 bid, uint256 reward) {
     Round storage round = rounds[id];
 
-    myBid = round.bidders.get(addr);
+    bid = round.bidders.get(addr);
     if (addr == round.winner) {
-      myReward = round.pendingReward;
+      reward = round.pendingReward;
+    } else if (round.winner == address(0)) {
+      if (round.pendingReward != round.total)
+        reward = (round.pendingReward * bid) / (round.total - round.pendingReward);
     } else {
-      myReward = myBid == 0 ? 0 : (round.pendingReward * myBid) / round.total;
+      bid = 0;
     }
   }
 
@@ -158,10 +162,9 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
 
     address bidder = round.bidders.at(index);
     uint256 bid = round.bidders.get(bidder);
-    uint256 highestBid = round.sortedBids.last();
 
-    if (bid == highestBid && highestBidderWins) {
-      round.pendingReward = round.total;
+    if (bid == round.sortedBids.last() && highestBidderWins) {
+      round.pendingReward = round.total - bid;
       round.winner = bidder;
 
       emit RoundEnded(currentRound, bidder);
@@ -172,17 +175,9 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
 
     round.pendingReward += bid;
 
-    removeBidder(currentRound, round.bidders.at(index));
+    if (--round.numBidders[bid] == 0) round.sortedBids.remove(bid);
+    round.bidders.remove(bidder);
 
     emit BidderEliminated(currentRound, bidder);
-  }
-
-  function removeBidder(uint256 id, address bidder) private {
-    Round storage round = rounds[id];
-
-    uint256 bid = round.bidders.get(bidder);
-
-    if (--round.numBiddersAtBid[bid] == 0) round.sortedBids.remove(bid);
-    round.bidders.remove(bidder);
   }
 }

@@ -70,7 +70,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
     require(saladBets[id][msg.sender].value == 0, "Salad: Already placed bet");
 
-    if (salads[currentSalad].createdOn == 0) createNewSalad(false);
+    if (salads[currentSalad].createdOn == 0) _createNewSalad(false);
 
     require(salads[currentSalad].expiresOn > block.timestamp, "Salad: Time is up!");
 
@@ -81,7 +81,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
 
     referrers[msg.sender] = referrer;
 
-    setMaxBetForSalad(id, msg.value);
+    _setMaxBetForSalad(id, msg.value);
 
     emit IngredientAdded(id, msg.sender, bet, bet2, msg.value);
   }
@@ -96,7 +96,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     saladBets[id][msg.sender].bet2 = bet2;
     saladBets[id][msg.sender].value += msg.value;
 
-    setMaxBetForSalad(id, saladBets[id][msg.sender].value);
+    _setMaxBetForSalad(id, saladBets[id][msg.sender].value);
 
     emit IngredientIncreased(id, msg.sender, bet2, saladBets[id][msg.sender].value);
   }
@@ -168,24 +168,24 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   }
 
   function _consumeRandomness(uint256 id, uint256 randomness) internal override {
-    serveSalad(id, SaladType(randomness % 6));
+    _serveSalad(id, SaladType(randomness % 6));
   }
 
-  function setMaxBetForSalad(uint256 id, uint256 amount) private {
+  function _setMaxBetForSalad(uint256 id, uint256 amount) private {
     if (amount > salads[id].maxBet) salads[id].maxBet = amount;
     if (salads[id].maxBet == amount) salads[id].maxBetter = msg.sender;
   }
 
-  function serveSalad(uint256 id, SaladType result) private {
+  function _serveSalad(uint256 id, SaladType result) private {
     salads[id].result = result;
     salads[id].status = SaladStatus.Served;
 
     emit SaladServed(id, result);
 
-    createNewSalad(true);
+    _createNewSalad(true);
   }
 
-  function createNewSalad(bool increment) private {
+  function _createNewSalad(bool increment) private {
     if (increment) currentSalad += 1;
 
     salads[currentSalad].createdOn = block.timestamp;

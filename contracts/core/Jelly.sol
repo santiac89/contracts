@@ -57,7 +57,7 @@ contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   }
 
   function _consumeRandomness(uint256 id, uint256 randomness) internal override {
-    concludeBet(id, JellyType(randomness % 2));
+    _concludeBet(id, JellyType(randomness % 2));
   }
 
   function acceptBet(uint256 id, address referrer) external payable {
@@ -73,7 +73,7 @@ contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     _requestRandomness(id);
   }
 
-  function concludeBet(uint256 id, JellyType result) private {
+  function _concludeBet(uint256 id, JellyType result) private {
     address winner = result == bets[id].bet ? bets[id].creator : bets[id].joiner;
 
     send(winner, bets[id].value * 2);
