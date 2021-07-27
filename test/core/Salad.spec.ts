@@ -161,8 +161,8 @@ describe('Salad', () => {
         expect(await salad.currentSalad()).to.eq(0)
 
         const s = await salad.salads(0)
-        expect(s.createdOn).to.eq(t + 1)
-        expect(s.expiresOn).to.eq(t + (1).day + 1)
+        expect(s.createdOn).to.eq(t)
+        expect(s.expiresOn).to.eq(t + (1).day)
       })
     })
 
@@ -170,7 +170,7 @@ describe('Salad', () => {
       await snapshot(async t => {
         await expect(salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth }))
           .to.emit(salad, 'SaladBowlCreated')
-          .withArgs(0, t + (1).day + 1)
+          .withArgs(0, t + (1).day)
       })
     })
 
