@@ -310,14 +310,14 @@ describe('Salad', () => {
         expect(await salad.currentSalad()).to.eq(1)
 
         const s = await salad.salads(1)
-        expect(s.createdOn).to.eq(time + 1)
-        expect(s.expiresOn).to.eq(time + (1).day + 1)
+        expect(s.createdOn).to.eq(time)
+        expect(s.expiresOn).to.eq(time + (1).day)
       })
 
       it('emits a SaladBowlCreated event (for the new salad)', async () => {
         await expect(txPromise)
           .to.emit(salad, 'SaladBowlCreated')
-          .withArgs(1, time + (1).day + 1)
+          .withArgs(1, time + (1).day)
       })
 
       it('emits a SaladServed event', async () => {
@@ -407,7 +407,7 @@ describe('Salad', () => {
       it('throws error if player tries to claim twice', async () => {
         const winners = allBets().filter(({ bet }) => bet !== 4)
 
-        for (const { bet, value, player, referrer } of winners) {
+        for (const { player } of winners) {
           await salad.connect(player).claim(0)
 
           await expect(salad.connect(player).claim(0)).to.be.revertedWith('Nothing to claim')

@@ -20,7 +20,7 @@ export async function snapshot(callback: (t: number) => Promise<any>) {
   t += (1).year
   await ethers.provider.send('evm_setNextBlockTimestamp', [t])
   await ethers.provider.send('evm_mine', [])
-  await callback(t)
+  await callback(t + 1)
 }
 
 export function hashEndingWith(s: string) {

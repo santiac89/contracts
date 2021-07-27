@@ -167,12 +167,16 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     expiry = val;
   }
 
-  function setMaxBetForSalad(uint256 id, uint256 amount) internal {
+  function _consumeRandomness(uint256 id, uint256 randomness) internal override {
+    serveSalad(id, SaladType(randomness % 6));
+  }
+
+  function setMaxBetForSalad(uint256 id, uint256 amount) private {
     if (amount > salads[id].maxBet) salads[id].maxBet = amount;
     if (salads[id].maxBet == amount) salads[id].maxBetter = msg.sender;
   }
 
-  function serveSalad(uint256 id, SaladType result) internal {
+  function serveSalad(uint256 id, SaladType result) private {
     salads[id].result = result;
     salads[id].status = SaladStatus.Served;
 
@@ -181,16 +185,12 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     createNewSalad(true);
   }
 
-  function createNewSalad(bool increment) internal {
+  function createNewSalad(bool increment) private {
     if (increment) currentSalad += 1;
 
     salads[currentSalad].createdOn = block.timestamp;
     salads[currentSalad].expiresOn = block.timestamp + expiry;
 
     emit SaladBowlCreated(currentSalad, block.timestamp + expiry);
-  }
-
-  function _consumeRandomness(uint256 id, uint256 randomness) internal override {
-    serveSalad(id, SaladType(randomness % 6));
   }
 }

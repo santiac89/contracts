@@ -56,6 +56,10 @@ contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     refund(msg.sender, sentAmount);
   }
 
+  function _consumeRandomness(uint256 id, uint256 randomness) internal override {
+    concludeBet(id, JellyType(randomness % 2));
+  }
+
   function acceptBet(uint256 id, address referrer) external payable {
     require(bets[id].value != 0, "Jelly: Bet is unavailable");
     require(bets[id].joiner == address(0), "Jelly: Bet is already accepted");
@@ -69,7 +73,7 @@ contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     _requestRandomness(id);
   }
 
-  function concludeBet(uint256 id, JellyType result) internal {
+  function concludeBet(uint256 id, JellyType result) private {
     address winner = result == bets[id].bet ? bets[id].creator : bets[id].joiner;
 
     send(winner, bets[id].value * 2);
@@ -77,9 +81,5 @@ contract Jelly is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     emit BetConcluded(id, referrers[winner], result);
 
     delete bets[id];
-  }
-
-  function _consumeRandomness(uint256 id, uint256 randomness) internal override {
-    concludeBet(id, JellyType(randomness % 2));
   }
 }

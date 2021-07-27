@@ -11,21 +11,30 @@ contract TestRecipe is Recipe {
   // solhint-disable no-empty-blocks
   constructor(address _whirlpool) Recipe(_whirlpool) {}
 
-  function enumerateSortedBids(uint256 id) public view returns (uint256[] memory arr) {
+  function enumerateSortedBids(uint256 id, uint256 size) public view returns (uint256[] memory) {
+    uint256[] memory arr = new uint256[](size);
     Tree storage tree = rounds[id].sortedBids;
 
     uint256 i = 0;
     for (uint256 k = tree.first(); k != 0; k = tree.next(k)) {
-      arr[i] = k;
+      arr[i++] = k;
     }
+
+    return arr;
   }
 
-  function enumerateBidders(uint256 id) public view returns (address[] memory keys, uint256[] memory values) {
+  function enumerateBids(uint256 id, uint256 size) public view returns (uint256[] memory) {
+    uint256[] memory values = new uint256[](size);
     AddressMap storage map = rounds[id].bidders;
 
-    for (uint256 i = 0; i < map.size(); i++) {
-      keys[i] = map.at(i);
-      values[i] = map.get(keys[i]);
+    for (uint256 i = 0; i < size; i++) {
+      values[i] = map.get(map.at(i));
     }
+
+    return values;
+  }
+
+  function hasBidder(uint256 id, address bidder) public view returns (bool) {
+    return rounds[id].bidders.has(bidder);
   }
 }
