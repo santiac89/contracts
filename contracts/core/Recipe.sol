@@ -34,14 +34,14 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   mapping(uint256 => Round) internal rounds;
   uint256 public currentRound;
 
-  uint16 public constant MAX_HIGHEST_BIDDER_WIN_ODDS = 10000;
-  uint16 public highestBidderWinOdds = 2500;
-
-  uint256 public minBidsPerRound = 5;
-  uint256 public minAmountPerRound = 1 ether;
+  uint256 public constant MAX_HIGHEST_BIDDER_WIN_ODDS = 10000;
+  uint256 public highestBidderWinOdds = 2500;
 
   uint256 public constant MAX_COOLDOWN = 4 hours;
   uint256 public cooldown = 10 minutes;
+  uint256 public minBidsPerRound = 5;
+
+  uint256 public minAmountPerRound = 1 ether;
 
   event BidCreated(uint256 id, address bidder, uint256 value);
   event Claimed(uint256 id, address bidder, uint256 reward);
@@ -108,19 +108,21 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     _requestRandomness(round.lastPick);
   }
 
-  function setHighestBidderWinOdds(uint16 val) external onlyOwner {
-    require(val <= MAX_HIGHEST_BIDDER_WIN_ODDS, "Recipe: Value exceeds max amount");
-    highestBidderWinOdds = val;
-  }
+  function configure(
+    uint256 _highestBidderWinOdds,
+    uint256 _cooldown,
+    uint256 _minBidsPerRound,
+    uint256 _minAmountPerRound
+  ) external onlyOwner {
+    require(
+      _highestBidderWinOdds <= MAX_HIGHEST_BIDDER_WIN_ODDS && _cooldown <= MAX_COOLDOWN,
+      "Recipe: Value exceeds max amount"
+    );
 
-  function setCooldown(uint256 val) external onlyOwner {
-    require(val <= MAX_COOLDOWN, "Recipe: Value exceeds max amount");
-    cooldown = val;
-  }
-
-  function setMinForElimination(uint256 minBids, uint256 minAmount) external onlyOwner {
-    minBidsPerRound = minBids;
-    minAmountPerRound = minAmount;
+    highestBidderWinOdds = _highestBidderWinOdds;
+    cooldown = _cooldown;
+    minBidsPerRound = _minBidsPerRound;
+    minAmountPerRound = _minAmountPerRound;
   }
 
   function roundInfo(uint256 id) public view returns (RoundInfo memory) {

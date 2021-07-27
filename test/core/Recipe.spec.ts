@@ -45,12 +45,24 @@ describe('Recipe', () => {
 
   const simpleBids = () => {
     const bid = bidFactory({ i: 0 })
-    return [bid(1), bid(2), bid(3), bid(4), bid(5)]
+
+    // prettier-ignore
+    return [
+      bid(1), bid(2), bid(3), bid(4), bid(5),
+      bid(1), bid(2), bid(3), bid(4), bid(5)
+    ]
   }
 
   const highestBid = () => allBids()[15]
   const nextHighestBid = () => allBids()[11]
-  const totalSum = () => allBids().reduce((a, b) => a.add(b.value), (0).wei)
+  const bidsSum = (n = 25) =>
+    allBids()
+      .slice(0, n)
+      .reduce((a, b) => a.add(b.value), (0).wei)
+  const simpleBidsSum = (n = 10) =>
+    simpleBids()
+      .slice(0, n)
+      .reduce((a, b) => a.add(b.value), (0).wei)
 
   const createBids = async (n = 1, simple = false) => {
     for (const { value, bidder, referrer } of (simple ? simpleBids() : allBids()).slice(0, n)) {
@@ -105,7 +117,7 @@ describe('Recipe', () => {
       }
 
       expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
-        total: totalSum(),
+        total: bidsSum(),
         numBidders: (25).wei,
         highestBid: highestBid().value,
         pendingReward: (0).wei,
@@ -115,20 +127,28 @@ describe('Recipe', () => {
     })
 
     it('increases bids for all existing bidders if called twice', async () => {
-      await createBids(25)
-      await createBids(25)
+      // simple bids have some duplicates to allow for full test coverage
+      await createSimpleBids(10)
+      await createSimpleBids(10)
 
-      expect(await recipe.enumerateSortedBids(0, 25)).to.eql(sorted(allBids().map(({ value }) => value.mul(2))))
-      expect(await recipe.enumerateBids(0, 25)).to.eql(allBids().map(({ value }) => value.mul(2)))
+      expect(await recipe.enumerateSortedBids(0, 5)).to.eql(
+        sorted(
+          simpleBids()
+            .slice(0, 5)
+            .map(({ value }) => value.mul(2))
+        )
+      )
 
-      for (const { bidder } of allBids()) {
+      expect(await recipe.enumerateBids(0, 10)).to.eql(simpleBids().map(({ value }) => value.mul(2)))
+
+      for (const { bidder } of simpleBids()) {
         expect(await recipe.hasBidder(0, bidder.address)).to.eq(true)
       }
 
       expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
-        total: totalSum().mul(2),
-        numBidders: (25).wei,
-        highestBid: highestBid().value.mul(2),
+        total: simpleBidsSum().mul(2),
+        numBidders: (10).wei,
+        highestBid: (10).eth,
         pendingReward: (0).wei,
         winner: constants.AddressZero,
         lastPick: (0).wei
@@ -187,10 +207,10 @@ describe('Recipe', () => {
 
         it('ends the round', async () => {
           expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
-            total: totalSum(),
+            total: bidsSum(),
             numBidders: (25).wei,
             highestBid: highestBid().value,
-            pendingReward: totalSum().sub(highestBid().value),
+            pendingReward: bidsSum().sub(highestBid().value),
             winner: highestBid().bidder.address,
             lastPick: time.wei
           })
@@ -204,7 +224,7 @@ describe('Recipe', () => {
         it('marks all pooled bids as pending reward of the winner', async () => {
           expect(await recipe.bidderInfo(0, highestBid().bidder.address)).to.eql([
             highestBid().value,
-            totalSum().sub(highestBid().value)
+            bidsSum().sub(highestBid().value)
           ])
         })
       })
@@ -218,7 +238,7 @@ describe('Recipe', () => {
         it('eliminates the bidder', async () => {
           expect(await recipe.currentRound()).to.eq(0)
           expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
-            total: totalSum(),
+            total: bidsSum(),
             numBidders: (24).wei,
             highestBid: nextHighestBid().value,
             pendingReward: highestBid().value,
@@ -245,7 +265,7 @@ describe('Recipe', () => {
         it('eliminates the bidder', async () => {
           expect(await recipe.currentRound()).to.eq(0)
           expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
-            total: totalSum(),
+            total: bidsSum(),
             numBidders: (24).wei,
             highestBid: highestBid().value,
             pendingReward: allBids()[0].value,
@@ -273,7 +293,7 @@ describe('Recipe', () => {
         it('adds to the pending rewards for the rest', async () => {
           expect(await recipe.currentRound()).to.eq(0)
           expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
-            total: totalSum(),
+            total: bidsSum(),
             numBidders: (20).wei,
             highestBid: highestBid().value,
             pendingReward: allBids()
@@ -284,6 +304,36 @@ describe('Recipe', () => {
           })
         })
       })
+    })
+
+    it('eliminates fine even if multiple bids have same values', async () => {
+      await createSimpleBids(10)
+      await recipe.eliminate()
+      await recipe.connect(owner).consumeRandomness(constants.HashZero, 0)
+
+      await fastForward((10).minutes)
+      await recipe.eliminate()
+      await recipe.connect(owner).consumeRandomness(constants.HashZero, 0)
+
+      await fastForward((10).minutes)
+      await recipe.eliminate()
+      await recipe.connect(owner).consumeRandomness(constants.HashZero, 0)
+
+      expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
+        total: simpleBidsSum(),
+        numBidders: (7).wei,
+        highestBid: (5).eth,
+        pendingReward: (6).eth,
+        winner: constants.AddressZero
+      })
+
+      expect(await recipe.enumerateSortedBids(0, 5)).to.eql(
+        sorted(
+          simpleBids()
+            .slice(0, 5)
+            .map(({ value }) => value)
+        )
+      )
     })
   })
 
@@ -406,6 +456,41 @@ describe('Recipe', () => {
       })
     })
 
+    it('processes claim fine even if multiple bids have the same value', async () => {
+      await createSimpleBids(10)
+      await recipe.eliminate()
+      await recipe.connect(owner).consumeRandomness(constants.HashZero, 0)
+
+      await fastForward((10).minutes)
+      await recipe.eliminate()
+      await recipe.connect(owner).consumeRandomness(constants.HashZero, 0)
+
+      await fastForward((10).minutes)
+      await recipe.eliminate()
+      await recipe.connect(owner).consumeRandomness(constants.HashZero, 0)
+
+      await recipe.connect(bidders[3]).claim(0)
+      await recipe.connect(bidders[4]).claim(0)
+
+      // all bids are still there (since there were two of each)
+      expect(await recipe.enumerateSortedBids(0, 5)).to.eql(
+        sorted(
+          simpleBids()
+            .slice(0, 5)
+            .map(({ value }) => value)
+        )
+      )
+
+      // 3 eliminated, 2 claimed, 5 remain
+      expect({ ...(await recipe.roundInfo(0)) }).to.deep.include({
+        total: (18.75).eth, // 30 - 9 - 6 * 9 / (30 - 6)
+        numBidders: (5).wei,
+        highestBid: (5).eth,
+        pendingReward: (3.75).eth, // 6 - 6 * 9 / (30 - 6)
+        winner: constants.AddressZero
+      })
+    })
+
     describe('when the highest bidder wins', async () => {
       beforeEach(async () => {
         await createBids(25)
@@ -423,7 +508,7 @@ describe('Recipe', () => {
 
       it("transfers all of pool's money to the winner", async () => {
         const { bidder, referrer } = highestBid()
-        const reward = totalSum()
+        const reward = bidsSum()
 
         await expect(await recipe.connect(bidder).claim(0)).to.changeEtherBalances(
           [recipe, bidder, owner, referrer],
@@ -451,7 +536,7 @@ describe('Recipe', () => {
       })
 
       it('processes claim of everyone appropriately', async () => {
-        for (let { bidder, value, i } of allBids()) {
+        for (let { bidder, i } of allBids()) {
           if (i % 4 == 0) {
             await expect(recipe.connect(bidder).claim(0)).to.be.revertedWith('Nothing to claim')
           } else {
@@ -475,6 +560,46 @@ describe('Recipe', () => {
           winner: constants.AddressZero
         })
       })
+    })
+  })
+
+  describe('configure', () => {
+    it('throws error if values are out of bounds', async () => {
+      const msg = 'Value exceeds max amount'
+
+      await expect(recipe.connect(owner).configure(10001, (1).hour, 20, (2).eth)).to.be.revertedWith(msg)
+      await expect(recipe.connect(owner).configure(100, (5).hours, 20, (2).eth)).to.be.revertedWith(msg)
+    })
+
+    it('sets new configuration', async () => {
+      await recipe.connect(owner).configure(10, (1).hour, 30, (200).eth)
+      await createBids(25)
+
+      await expect(recipe.eliminate()).to.be.revertedWith('Min amount not reached')
+
+      await recipe.connect(owner).configure(10, (1).hour, 30, (2).eth)
+
+      await expect(recipe.eliminate()).to.be.revertedWith('Min bids not reached')
+
+      await recipe.connect(owner).configure(10, (1).hour, 5, (2).eth)
+      await recipe.eliminate() // works fine
+      await recipe.connect(owner).consumeRandomness(constants.HashZero, 24) // eliminate the last person
+
+      await expect(recipe.eliminate()).to.be.revertedWith('Must cooldown first')
+
+      await fastForward((20).minutes) // cooldown time is not up yet
+
+      await expect(recipe.eliminate()).to.be.revertedWith('Must cooldown first')
+
+      await fastForward((40).minutes) // 1 hour is up
+      await recipe.eliminate() // works fine
+
+      // highest bidder has now moved to 14
+      // the win chance of highest bidder is 0.1% (10 / 10000), but the position is 14
+      // which makes it impossible since 14 % 10000 = 14 (which is < 10)
+      await expect(recipe.connect(owner).consumeRandomness(constants.HashZero, 14))
+        .to.emit(recipe, 'BidderEliminated')
+        .withArgs(0, highestBid().bidder.address)
     })
   })
 })

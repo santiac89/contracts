@@ -152,7 +152,7 @@ describe('Donut', () => {
   describe('setMultiplier', () => {
     it('sets reward multiplier to the given value', async () => {
       await donut.connect(owner).setBlockHash(hashEndingWith('f'))
-      await donut.connect(owner).setMultiplier(20)
+      await donut.connect(owner).setMultiplier(2000)
 
       await donut.placeBet(0xf, referrer.address, { value: (0.1).eth })
 

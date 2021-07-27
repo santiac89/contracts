@@ -46,7 +46,6 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   uint256 public constant MIN_EXPIRY = 1 hours;
 
   uint256 public expiry = 1 days;
-
   uint256 public currentSalad = 0;
 
   event IngredientAdded(uint256 id, address creator, SaladType bet, SaladType bet2, uint256 value);
