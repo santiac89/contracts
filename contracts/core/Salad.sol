@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "../utils/ValueLimits.sol";
 import "../utils/TransferWithCommission.sol";
 import "../utils/WhirlpoolConsumer.sol";
+import "../utils/WhitelistedTokens.sol";
 
 enum SaladType {
   Pepper,
@@ -33,12 +34,13 @@ struct SaladBowl {
   uint256 expiresOn;
   uint256 maxBet;
   address maxBetter;
+  address token;
   SaladStatus status;
   SaladType result;
 }
 
 // solhint-disable not-rely-on-time
-contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
+contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer, WhitelistedTokens {
   mapping(uint256 => SaladBowl) public salads;
   mapping(uint256 => mapping(address => SaladBet)) public saladBets;
 
@@ -48,11 +50,13 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   uint256 public expiry = 1 days;
   uint256 public currentSalad = 0;
 
+  address public tokenForNextSalad;
+
   event IngredientAdded(uint256 id, address creator, SaladType bet, SaladType bet2, uint256 value);
   event IngredientIncreased(uint256 id, address creator, SaladType bet2, uint256 newValue);
   event Claimed(uint256 id, address creator, uint256 value, address referrer);
 
-  event SaladBowlCreated(uint256 id, uint256 expiresOn);
+  event SaladBowlCreated(uint256 id, address token, uint256 expiresOn);
   event SaladPrepared(uint256 id);
   event SaladServed(uint256 id, SaladType result);
 
@@ -64,7 +68,17 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     SaladType bet,
     SaladType bet2,
     address referrer
-  ) external payable isMinValue {
+  ) external payable {
+    addIngredientWithToken(id, msg.value, bet, bet2, referrer);
+  }
+
+  function addIngredientWithToken(
+    uint256 id,
+    uint256 value,
+    SaladType bet,
+    SaladType bet2,
+    address referrer
+  ) public isMinTokenValue(value) {
     require(currentSalad == id, "Salad: Not current salad");
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
     require(saladBets[id][msg.sender].value == 0, "Salad: Already placed bet");
@@ -73,27 +87,37 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
 
     require(salads[currentSalad].expiresOn > block.timestamp, "Salad: Time is up!");
 
-    salads[id].sum[bet] += msg.value;
+    receiveToken(salads[id].token, msg.sender, value);
+
+    salads[id].sum[bet] += value;
     saladBets[id][msg.sender].bet = bet;
     saladBets[id][msg.sender].bet2 = bet2;
-    saladBets[id][msg.sender].value = msg.value;
+    saladBets[id][msg.sender].value = value;
 
     referrers[msg.sender] = referrer;
 
-    _setMaxBetForSalad(id, msg.value);
+    _setMaxBetForSalad(id, value);
 
-    emit IngredientAdded(id, msg.sender, bet, bet2, msg.value);
+    emit IngredientAdded(id, msg.sender, bet, bet2, value);
   }
 
   function increaseIngredient(uint256 id, SaladType bet2) external payable {
-    require(msg.value > 0, "Salad: Value must be more than 0");
+    increaseIngredientWithToken(id, msg.value, bet2);
+  }
+
+  function increaseIngredientWithToken(
+    uint256 id,
+    uint256 value,
+    SaladType bet2
+  ) public {
+    require(value > 0, "Salad: Value must be more than 0");
     require(saladBets[id][msg.sender].value > 0, "Salad: No bet placed yet");
     require(salads[id].status == SaladStatus.BowlCreated, "Salad: Already prepared");
     require(salads[id].expiresOn > block.timestamp, "Salad: Time is up!");
 
-    salads[id].sum[saladBets[id][msg.sender].bet] += msg.value;
+    salads[id].sum[saladBets[id][msg.sender].bet] += value;
     saladBets[id][msg.sender].bet2 = bet2;
-    saladBets[id][msg.sender].value += msg.value;
+    saladBets[id][msg.sender].value += value;
 
     _setMaxBetForSalad(id, saladBets[id][msg.sender].value);
 
@@ -142,7 +166,7 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     delete saladBets[id][msg.sender];
     emit Claimed(id, msg.sender, myReward, referrers[msg.sender]);
 
-    send(msg.sender, myReward);
+    sendToken(salads[id].token, msg.sender, myReward);
   }
 
   function betSum(uint256 id, SaladType bet) external view returns (uint256) {
@@ -158,6 +182,10 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
       s[SaladType.Carrot] +
       s[SaladType.Corn] +
       s[SaladType.Broccoli];
+  }
+
+  function setTokenForNextSalad(address token) external onlyOwner isWhitelisted(token) {
+    tokenForNextSalad = token;
   }
 
   function setExpiry(uint256 val) external onlyOwner {
@@ -189,7 +217,8 @@ contract Salad is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
 
     salads[currentSalad].createdOn = block.timestamp;
     salads[currentSalad].expiresOn = block.timestamp + expiry;
+    salads[currentSalad].token = tokenForNextSalad;
 
-    emit SaladBowlCreated(currentSalad, block.timestamp + expiry);
+    emit SaladBowlCreated(currentSalad, tokenForNextSalad, block.timestamp + expiry);
   }
 }

@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "./interfaces/IWhirlpoolConsumer.sol";
 import "./interfaces/IWhirlpool.sol";
-import "./Ownable.sol";
 
 contract Whirlpool is VRFConsumerBase, Ownable, IWhirlpool {
   mapping(address => bool) private validConsumers;

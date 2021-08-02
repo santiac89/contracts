@@ -170,7 +170,7 @@ describe('Salad', () => {
       await snapshot(async t => {
         await expect(salad.addIngredient(0, 1, 3, referrers[0].address, { value: (0.1).eth }))
           .to.emit(salad, 'SaladBowlCreated')
-          .withArgs(0, t + (1).day)
+          .withArgs(0, constants.AddressZero, t + (1).day)
       })
     })
 
@@ -317,7 +317,7 @@ describe('Salad', () => {
       it('emits a SaladBowlCreated event (for the new salad)', async () => {
         await expect(txPromise)
           .to.emit(salad, 'SaladBowlCreated')
-          .withArgs(1, time + (1).day)
+          .withArgs(1, constants.AddressZero, time + (1).day)
       })
 
       it('emits a SaladServed event', async () => {

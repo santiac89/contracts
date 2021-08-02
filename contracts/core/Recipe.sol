@@ -7,6 +7,7 @@ import "../ds/EnumerableMap.sol";
 import "../utils/TransferWithCommission.sol";
 import "../utils/ValueLimits.sol";
 import "../utils/WhirlpoolConsumer.sol";
+import "../utils/WhitelistedTokens.sol";
 
 struct Round {
   Tree sortedBids;
@@ -16,6 +17,7 @@ struct Round {
   address winner;
   uint256 total;
   uint256 lastPick;
+  address token;
 }
 
 struct RoundInfo {
@@ -27,7 +29,7 @@ struct RoundInfo {
   uint256 lastPick;
 }
 
-contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
+contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer, WhitelistedTokens {
   using RedBlackTree for Tree;
   using EnumerableMap for AddressMap;
 
@@ -43,6 +45,8 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
 
   uint256 public minAmountPerRound = 1 ether;
 
+  address public tokenForNextRound;
+
   event BidCreated(uint256 id, address bidder, uint256 value);
   event Claimed(uint256 id, address bidder, uint256 reward);
   event BidderEliminated(uint256 id, address bidder);
@@ -51,27 +55,38 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
   // solhint-disable no-empty-blocks
   constructor(address _whirlpool) WhirlpoolConsumer(_whirlpool) ValueLimits(0.001 ether, 100 ether) {}
 
-  function createBid(uint256 id, address referrer) external payable isMinValue {
+  function createBid(uint256 id, address referrer) external payable {
+    createBidWithToken(id, msg.value, referrer);
+  }
+
+  function createBidWithToken(
+    uint256 id,
+    uint256 value,
+    address referrer
+  ) public isMinTokenValue(value) {
     require(currentRound == id, "Recipe: Not current round");
 
     Round storage round = rounds[id];
+
+    receiveToken(round.token, msg.sender, value);
+
     uint256 bid = round.bidders.get(msg.sender);
 
     if (bid > 0) {
       if (--round.numBidders[bid] == 0) round.sortedBids.remove(bid);
     }
 
-    bid += msg.value;
+    bid += value;
 
     round.sortedBids.insert(bid);
     round.numBidders[bid]++;
     round.bidders.set(msg.sender, bid);
 
-    round.total += msg.value;
+    round.total += value;
 
     referrers[msg.sender] = referrer;
 
-    emit BidCreated(id, msg.sender, msg.value);
+    emit BidCreated(id, msg.sender, value);
   }
 
   function claim(uint256 id) external {
@@ -152,6 +167,10 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
     }
   }
 
+  function setTokenForNextRound(address token) external onlyOwner isWhitelisted(token) {
+    tokenForNextRound = token;
+  }
+
   function _consumeRandomness(uint256, uint256 randomness) internal override {
     _eliminate(
       (randomness % rounds[currentRound].bidders.size()),
@@ -171,7 +190,7 @@ contract Recipe is TransferWithCommission, ValueLimits, WhirlpoolConsumer {
 
       emit RoundEnded(currentRound, bidder);
 
-      currentRound++;
+      rounds[++currentRound].token = tokenForNextRound;
       return;
     }
 

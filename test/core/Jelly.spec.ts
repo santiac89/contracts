@@ -80,7 +80,7 @@ describe('Jelly', () => {
     it('emits a BetCreated event', async () => {
       await expect(jelly.createBet(0, constants.AddressZero, { value: (0.01).eth }))
         .to.emit(jelly, 'BetCreated')
-        .withArgs(0, creator.address, 0, (0.01).eth)
+        .withArgs(0, creator.address, constants.AddressZero, 0, (0.01).eth)
     })
   })
 

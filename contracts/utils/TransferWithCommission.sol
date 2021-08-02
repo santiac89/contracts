@@ -2,7 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 abstract contract TransferWithCommission is Ownable {
   uint16 public constant MAX_COMMISSION_RATE = 1000;
@@ -28,16 +29,35 @@ abstract contract TransferWithCommission is Ownable {
     cancellationFee = _cancellationFee;
   }
 
-  function refund(address to, uint256 amount) internal {
-    uint256 fee = (amount * cancellationFee) / 10000;
+  function receiveToken(
+    address token,
+    address from,
+    uint256 amount
+  ) internal {
+    // already received ether as payable
+    if (token == address(0)) return;
 
-    _send(to, amount - fee);
-    if (fee != 0) _send(owner(), fee);
+    require(IERC20(token).transferFrom(from, address(this), amount), "Transfer: Unable to receive");
   }
 
-  function send(address to, uint256 amount) internal {
+  function refundToken(
+    address token,
+    address to,
+    uint256 amount
+  ) internal {
+    uint256 fee = (amount * cancellationFee) / 10000;
+
+    _send(token, to, amount - fee);
+    if (fee != 0) _send(token, owner(), fee);
+  }
+
+  function sendToken(
+    address token,
+    address to,
+    uint256 amount
+  ) internal {
     uint256 fee = (amount * commissionRate) / 10000;
-    _send(to, amount - fee);
+    _send(token, to, amount - fee);
 
     if (fee == 0) return;
 
@@ -45,18 +65,34 @@ abstract contract TransferWithCommission is Ownable {
     if (referrer != address(0)) {
       uint256 refBonus = (amount * referralRate) / 10000;
 
-      _send(referrer, refBonus);
+      _send(token, referrer, refBonus);
       fee -= refBonus;
     }
 
-    _send(owner(), fee);
+    _send(token, owner(), fee);
   }
 
-  function _send(address to, uint256 value) internal {
-    require(address(this).balance >= value, "Transfer: insufficient balance");
+  function refund(address to, uint256 amount) internal {
+    refundToken(address(0), to, amount);
+  }
 
-    // solhint-disable avoid-low-level-calls
-    (bool success, ) = payable(to).call{ value: value }("");
-    require(success, "Transfer: Unable to send");
+  function send(address to, uint256 amount) internal {
+    sendToken(address(0), to, amount);
+  }
+
+  function _send(
+    address token,
+    address to,
+    uint256 value
+  ) internal {
+    if (token == address(0)) {
+      require(address(this).balance >= value, "Transfer: insufficient balance");
+
+      // solhint-disable avoid-low-level-calls
+      (bool success, ) = payable(to).call{ value: value }("");
+      require(success, "Transfer: Unable to send");
+    } else {
+      require(IERC20(token).transfer(to, value), "Transfer: Unable to send");
+    }
   }
 }

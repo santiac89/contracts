@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 abstract contract ValueLimits is Ownable {
   uint256 public minValue;
@@ -13,8 +13,18 @@ abstract contract ValueLimits is Ownable {
     maxValue = max;
   }
 
+  modifier isMinTokenValue(uint256 value) {
+    require(value >= minValue, "ValueLimits: Less than minimum");
+    _;
+  }
+
   modifier isMinValue() {
     require(msg.value >= minValue, "ValueLimits: Less than minimum");
+    _;
+  }
+
+  modifier isMaxTokenValue(uint256 value) {
+    require(value <= minValue, "ValueLimits: More than maximum");
     _;
   }
 
