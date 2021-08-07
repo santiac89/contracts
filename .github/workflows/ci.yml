@@ -33,3 +33,21 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  gas-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with: { node-version: 15 }
+      - name: Compile
+        run: |
+          yarn
+          yarn hardhat compile
+      - name: Run tests
+        run: CI=true yarn hardhat test
+      - name: Generate gas usage report
+        id: gas_report
+        uses: santiac89/gas-report-action@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
