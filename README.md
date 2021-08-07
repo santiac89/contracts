@@ -1,6 +1,6 @@
 # Contracts for Juicy.bet games
 
-[![ci workflow](https://github.com/juicybet/contracts/actions/workflows/ci.yaml/badge.svg)](https://github.com/juicybet/contracts/actions/workflows/ci.yaml) [![Coverage Status](https://coveralls.io/repos/github/juicybet/contracts/badge.svg?branch=main)](https://coveralls.io/github/juicybet/contracts?branch=main)
+[![ci workflow](https://github.com/juicybet/contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/juicybet/contracts/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/juicybet/contracts/badge.svg?branch=main)](https://coveralls.io/github/juicybet/contracts?branch=main)
 
 ---
 
