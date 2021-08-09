@@ -48,6 +48,6 @@ jobs:
         run: CI=true yarn hardhat test
       - name: Generate gas usage report
         id: gas_report
-        uses: santiac89/gas-report-action@main
+        uses: santiac89/gas-report-action@1.0.10
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
