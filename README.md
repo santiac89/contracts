@@ -12,3 +12,4 @@
 4. **Recipe:** A game of constant elimination. One person gets eliminated every 5 minutes and their rewards redistributed to the rest. However, if the highest bidder gets picked, they have a 25% chance of taking everything in the pool instead of getting eliminated.
 5. **Vine:** A game of price prediction of BNB or any token like CAKE. Each prediction round lasts 24 hours. You have to bet whether the price will go up or down the current price in a particular range. However as more people keep betting, the range keeps shrinking, so you need to bet more to increase your range. At the end of the round, the winners get losers' money.
 
+
